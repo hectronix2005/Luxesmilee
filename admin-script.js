@@ -506,6 +506,11 @@ async function saveAllChanges() {
             if (response.ok) {
                 const result = await response.json();
                 console.log('Site data saved to server API successfully:', result);
+                if (result.success) {
+                    console.log('✅ Data persisted to database');
+                }
+            } else {
+                console.error('Server API error:', response.status, response.statusText);
             }
         } catch (apiError) {
             console.log('Server API not available, saving locally:', apiError);
@@ -756,6 +761,26 @@ function addNewDoctor() {
     
     // Immediately save changes to persist the new doctor
     collectFormData();
+    
+    // Save to server API
+    try {
+        const response = await fetch('/api/site-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(siteData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('New doctor saved to database:', result);
+        }
+    } catch (apiError) {
+        console.log('Server API not available, saving locally:', apiError);
+    }
+    
+    // Also save locally as backup
     localStorage.setItem('siteData', JSON.stringify(siteData));
     sessionStorage.setItem('siteData', JSON.stringify(siteData));
     
@@ -786,6 +811,26 @@ function removeDoctor(doctorId) {
             
             // Immediately save changes to persist the deletion
             collectFormData();
+            
+            // Save to server API
+            try {
+                const response = await fetch('/api/site-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(siteData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Doctor deletion saved to database:', result);
+                }
+            } catch (apiError) {
+                console.log('Server API not available, saving locally:', apiError);
+            }
+            
+            // Also save locally as backup
             localStorage.setItem('siteData', JSON.stringify(siteData));
             sessionStorage.setItem('siteData', JSON.stringify(siteData));
             

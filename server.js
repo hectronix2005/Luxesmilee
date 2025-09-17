@@ -4,10 +4,38 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Database file path
+const DATA_FILE = path.join(__dirname, 'site-data.json');
+
+// Helper functions for data persistence
+function loadSiteData() {
+    try {
+        if (fs.existsSync(DATA_FILE)) {
+            const data = fs.readFileSync(DATA_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (error) {
+        console.error('Error loading site data:', error);
+    }
+    return null;
+}
+
+function saveSiteData(data) {
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+        console.log('Site data saved to file successfully');
+        return true;
+    } catch (error) {
+        console.error('Error saving site data:', error);
+        return false;
+    }
+}
 
 // Middleware
 app.use(helmet({
@@ -49,8 +77,15 @@ app.get('/', (req, res) => {
 // API routes for admin panel
 app.get('/api/site-data', (req, res) => {
     try {
-        // In a real implementation, this would fetch from a database
-        // For now, we'll return a default structure
+        // Try to load from file first
+        const savedData = loadSiteData();
+        if (savedData) {
+            console.log('Site data loaded from file');
+            return res.json(savedData);
+        }
+        
+        // If no saved data, return default structure
+        console.log('No saved data found, returning defaults');
         const defaultData = {
             hero: {
                 title: "Renueva Tu Confianza con Nuestro Diseño de Sonrisa",
@@ -179,18 +214,28 @@ app.post('/api/site-data', (req, res) => {
         const siteData = req.body;
         console.log('Site data received:', siteData);
         
-        // In a real implementation, this would save to a database
-        // For now, we'll just log the data
-        console.log('Site data saved successfully');
+        // Save to file
+        const success = saveSiteData(siteData);
         
-        res.json({ 
-            success: true, 
-            message: 'Site data saved successfully',
-            timestamp: new Date().toISOString()
-        });
+        if (success) {
+            res.json({ 
+                success: true, 
+                message: 'Site data saved successfully to database',
+                timestamp: new Date().toISOString(),
+                data: siteData
+            });
+        } else {
+            res.status(500).json({ 
+                success: false,
+                error: 'Failed to save site data' 
+            });
+        }
     } catch (error) {
         console.error('Error saving site data:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ 
+            success: false,
+            error: 'Internal server error' 
+        });
     }
 });
 
