@@ -1,0 +1,36 @@
+{
+  "name": "luxe-smile-admin",
+  "version": "1.0.0",
+  "description": "Panel de administración para Luxe Smile - Odontología Peña Herrera",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "echo 'No build step required for static files'",
+    "heroku-postbuild": "echo 'Post-build completed'"
+  },
+  "keywords": [
+    "admin",
+    "panel",
+    "dentistry",
+    "luxe-smile",
+    "management"
+  ],
+  "author": "Luxe Smile Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

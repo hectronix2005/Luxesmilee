@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Conexión Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .test-data {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Prueba de Conexión Firebase</h1>
+        <p>Esta página te ayuda a verificar que Firebase esté configurado correctamente.</p>
+        
+        <div id="firebase-status" class="status info">
+            🔄 Verificando conexión a Firebase...
+        </div>
+        
+        <div id="test-results"></div>
+        
+        <h3>Pruebas Disponibles:</h3>
+        <button onclick="testFirebaseConnection()">Probar Conexión</button>
+        <button onclick="testWriteData()">Probar Escritura</button>
+        <button onclick="testReadData()">Probar Lectura</button>
+        <button onclick="testRealTimeUpdates()">Probar Tiempo Real</button>
+        
+        <h3>Datos de Prueba:</h3>
+        <div id="test-data" class="test-data">No hay datos de prueba aún...</div>
+        
+        <h3>Instrucciones:</h3>
+        <ol>
+            <li>Asegúrate de haber configurado Firebase siguiendo la guía</li>
+            <li>Actualiza <code>firebase-config.js</code> con tu configuración real</li>
+            <li>Haz clic en "Probar Conexión" para verificar la configuración</li>
+            <li>Si todo funciona, el panel de administración guardará en Firebase</li>
+        </ol>
+        
+        <div id="next-steps" style="display: none;">
+            <h3>✅ ¡Firebase Configurado Correctamente!</h3>
+            <p>Ahora puedes:</p>
+            <ul>
+                <li>Ir al <a href="admin.html">Panel de Administración</a></li>
+                <li>Hacer cambios y guardarlos</li>
+                <li>Verificar que se guarden en Firebase</li>
+                <li>Los cambios aparecerán automáticamente en el sitio principal</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Firebase Configuration -->
+    <script type="module" src="firebase-config.js"></script>
+    
+    <script>
+        let testData = {
+            timestamp: new Date().toISOString(),
+            testMessage: "Prueba de conexión Firebase",
+            randomNumber: Math.floor(Math.random() * 1000)
+        };
+        
+        async function testFirebaseConnection() {
+            const statusDiv = document.getElementById('firebase-status');
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                if (!window.firebaseDB) {
+                    throw new Error('Firebase no está inicializado. Verifica firebase-config.js');
+                }
+                
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✅ Firebase inicializado correctamente';
+                
+                resultsDiv.innerHTML += '<div class="status success">✅ Conexión a Firebase: EXITOSA</div>';
+                
+                // Mostrar pasos siguientes
+                document.getElementById('next-steps').style.display = 'block';
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Error de conexión: ' + error.message;
+                
+                resultsDiv.innerHTML += '<div class="status error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+        
+        async function testWriteData() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                if (!window.firebaseDB) {
+                    throw new Error('Firebase no está inicializado');
+                }
+                
+                const docRef = window.firebaseDB.doc(window.firebaseDB.db, 'test', 'connection');
+                await window.firebaseDB.setDoc(docRef, testData);
+                
+                resultsDiv.innerHTML += '<div class="status success">✅ Escritura en Firebase: EXITOSA</div>';
+                updateTestData();
+                
+            } catch (error) {
+                resultsDiv.innerHTML += '<div class="status error">❌ Error de escritura: ' + error.message + '</div>';
+            }
+        }
+        
+        async function testReadData() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                if (!window.firebaseDB) {
+                    throw new Error('Firebase no está inicializado');
+                }
+                
+                const docRef = window.firebaseDB.doc(window.firebaseDB.db, 'test', 'connection');
+                const docSnap = await window.firebaseDB.getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    resultsDiv.innerHTML += '<div class="status success">✅ Lectura de Firebase: EXITOSA</div>';
+                    document.getElementById('test-data').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    resultsDiv.innerHTML += '<div class="status warning">⚠️ No se encontraron datos de prueba</div>';
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += '<div class="status error">❌ Error de lectura: ' + error.message + '</div>';
+            }
+        }
+        
+        function testRealTimeUpdates() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                if (!window.firebaseDB) {
+                    throw new Error('Firebase no está inicializado');
+                }
+                
+                const docRef = window.firebaseDB.doc(window.firebaseDB.db, 'test', 'connection');
+                
+                window.firebaseDB.onSnapshot(docRef, (doc) => {
+                    if (doc.exists()) {
+                        resultsDiv.innerHTML += '<div class="status success">✅ Actualización en tiempo real: EXITOSA</div>';
+                        document.getElementById('test-data').textContent = JSON.stringify(doc.data(), null, 2);
+                    }
+                }, (error) => {
+                    resultsDiv.innerHTML += '<div class="status error">❌ Error de tiempo real: ' + error.message + '</div>';
+                });
+                
+                resultsDiv.innerHTML += '<div class="status info">🔄 Escuchando cambios en tiempo real...</div>';
+                
+            } catch (error) {
+                resultsDiv.innerHTML += '<div class="status error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+        
+        function updateTestData() {
+            testData.timestamp = new Date().toISOString();
+            testData.randomNumber = Math.floor(Math.random() * 1000);
+        }
+        
+        // Auto-test al cargar la página
+        window.addEventListener('load', () => {
+            setTimeout(testFirebaseConnection, 1000);
+        });
+    </script>
+</body>
+</html>

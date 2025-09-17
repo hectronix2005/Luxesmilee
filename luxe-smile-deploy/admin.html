@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Odontología Peña Herrera</title>
+    <link rel="stylesheet" href="admin-styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Admin Header -->
+    <header class="admin-header">
+        <div class="admin-header-content">
+            <div class="admin-logo">
+                <i class="fas fa-cog"></i>
+                <h1>Panel de Administración</h1>
+            </div>
+            <div class="admin-actions">
+                <button class="btn-preview" onclick="previewSite()">
+                    <i class="fas fa-eye"></i> Vista Previa
+                </button>
+                <button class="btn-save" onclick="saveAllChanges()">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <nav class="admin-nav">
+            <ul>
+                <li class="nav-item active" data-section="hero">
+                    <i class="fas fa-home"></i>
+                    <span>Sección Hero</span>
+                </li>
+                <li class="nav-item" data-section="doctors">
+                    <i class="fas fa-user-md"></i>
+                    <span>Doctores</span>
+                </li>
+                <li class="nav-item" data-section="services">
+                    <i class="fas fa-tooth"></i>
+                    <span>Servicios</span>
+                </li>
+                <li class="nav-item" data-section="gallery">
+                    <i class="fas fa-images"></i>
+                    <span>Galería Antes/Después</span>
+                </li>
+                <li class="nav-item" data-section="testimonials">
+                    <i class="fas fa-quote-left"></i>
+                    <span>Testimonios</span>
+                </li>
+                <li class="nav-item" data-section="contact">
+                    <i class="fas fa-address-book"></i>
+                    <span>Contacto</span>
+                </li>
+                <li class="nav-item" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Configuración</span>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Admin Main Content -->
+    <main class="admin-main">
+        <!-- Hero Section Editor -->
+        <section class="admin-section active" id="hero-section">
+            <div class="section-header">
+                <h2><i class="fas fa-home"></i> Sección Hero</h2>
+                <p>Edita el contenido principal de la página</p>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="hero-title">Título Principal</label>
+                    <input type="text" id="hero-title" value="Renueva Tu Confianza con Nuestro Diseño de Sonrisa">
+                </div>
+                
+                <div class="form-group">
+                    <label for="hero-subtitle">Subtítulo</label>
+                    <input type="text" id="hero-subtitle" value="Alcanza la sonrisa que siempre has deseado">
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="hero-features">Características (una por línea)</label>
+                    <textarea id="hero-features" rows="4">Transformación estética personalizada para tu sonrisa ideal.
+Corrección de imperfecciones dentales con carillas y blanqueamiento.
+Tecnología avanzada para resultados precisos y naturales.</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="hero-bg-image">Imagen de Fondo</label>
+                    <div class="image-upload">
+                        <input type="file" id="hero-bg-image" accept="image/*" onchange="previewImage(this, 'hero-bg-preview')">
+                        <div class="upload-area" onclick="document.getElementById('hero-bg-image').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Haz clic para subir imagen</span>
+                        </div>
+                        <div class="image-preview" id="hero-bg-preview"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Doctors Section Editor -->
+        <section class="admin-section" id="doctors-section">
+            <div class="section-header">
+                <h2><i class="fas fa-user-md"></i> Doctores</h2>
+                <p>Gestiona la información de los doctores</p>
+                <div class="section-actions">
+                    <button class="btn-add" onclick="addNewDoctor()">
+                        <i class="fas fa-plus"></i> Agregar Doctor
+                    </button>
+                </div>
+            </div>
+            
+            <div class="doctors-editor">
+                <div class="doctor-editor" data-doctor-id="1">
+                    <div class="doctor-header">
+                        <h3>Dra. Paola Peña</h3>
+                        <button class="btn-remove" onclick="removeDoctor(1)" title="Eliminar doctor">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="doctor1-name">Nombre</label>
+                            <input type="text" id="doctor1-name" value="Dra. Paola Peña">
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor1-specialty">Especialidad</label>
+                            <input type="text" id="doctor1-specialty" value="Odontóloga - Universidad Javeriana | Esp. en Implantología oral y reconstructiva">
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor1-experience">Años de Experiencia</label>
+                            <input type="number" id="doctor1-experience" value="15">
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor1-image">Foto</label>
+                            <div class="image-upload">
+                                <input type="file" id="doctor1-image" accept="image/*" onchange="previewImage(this, 'doctor1-preview')">
+                                <div class="upload-area" onclick="document.getElementById('doctor1-image').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir foto</span>
+                                </div>
+                                <div class="image-preview" id="doctor1-preview">
+                                    <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=250&fit=crop&crop=face&auto=format&q=80" alt="Dra. Paola Peña">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="doctor-editor" data-doctor-id="2">
+                    <div class="doctor-header">
+                        <h3>Dra. Patricia Herrera</h3>
+                        <button class="btn-remove" onclick="removeDoctor(2)" title="Eliminar doctor">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="doctor2-name">Nombre</label>
+                            <input type="text" id="doctor2-name" value="Dra. Patricia Herrera">
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor2-specialty">Especialidad</label>
+                            <input type="text" id="doctor2-specialty" value="Odontóloga - Universidad Javeriana | Esp. en Ortodoncia, maloclusiones y alineación dental">
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor2-experience">Años de Experiencia</label>
+                            <input type="number" id="doctor2-experience" value="12">
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor2-image">Foto</label>
+                            <div class="image-upload">
+                                <input type="file" id="doctor2-image" accept="image/*" onchange="previewImage(this, 'doctor2-preview')">
+                                <div class="upload-area" onclick="document.getElementById('doctor2-image').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir foto</span>
+                                </div>
+                                <div class="image-preview" id="doctor2-preview">
+                                    <img src="https://images.unsplash.com/photo-1594824388852-8a7b3b5b5b5b?w=200&h=250&fit=crop&crop=face&auto=format&q=80" alt="Dra. Patricia Herrera">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section Editor -->
+        <section class="admin-section" id="services-section">
+            <div class="section-header">
+                <h2><i class="fas fa-tooth"></i> Servicios</h2>
+                <p>Gestiona los servicios y precios</p>
+            </div>
+            
+            <div class="services-editor">
+                <div class="service-editor">
+                    <h3>Carillas en Porcelana</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="service1-title">Título</label>
+                            <input type="text" id="service1-title" value="Carillas en porcelana">
+                        </div>
+                        <div class="form-group">
+                            <label for="service1-description">Descripción</label>
+                            <textarea id="service1-description" rows="3">Solución de alta gama para transformar la estética dental. Garantizan durabilidad y un acabado natural</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="service1-features">Características (una por línea)</label>
+                            <textarea id="service1-features" rows="3">Duración: 10 a 20 años
+Gama alta
+Material resistente, duradero y seguro</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="service1-price">Precio</label>
+                            <input type="text" id="service1-price" value="desde $1.000.000">
+                        </div>
+                        <div class="form-group">
+                            <label for="service1-video">Video ID de YouTube</label>
+                            <input type="text" id="service1-video" placeholder="ID del video de YouTube" value="jNQXAC9IVRw">
+                        </div>
+                        <div class="form-group">
+                            <label for="service1-thumbnail">Thumbnail del Video</label>
+                            <div class="image-upload">
+                                <input type="file" id="service1-thumbnail" accept="image/*" onchange="previewImage(this, 'service1-thumbnail-preview')">
+                                <div class="upload-area" onclick="document.getElementById('service1-thumbnail').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir thumbnail</span>
+                                </div>
+                                <div class="image-preview" id="service1-thumbnail-preview">
+                                    <img src="https://images.unsplash.com/photo-1606811841689-23dfddceeee3?w=200&h=100&fit=crop&auto=format&q=80" alt="Thumbnail del video">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="service-editor">
+                    <h3>Carillas en Resina</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="service2-title">Título</label>
+                            <input type="text" id="service2-title" value="Carillas en resina">
+                        </div>
+                        <div class="form-group">
+                            <label for="service2-description">Descripción</label>
+                            <textarea id="service2-description" rows="3">Alternativa económica y efectiva para mejorar la sonrisa. Ofrecen resultados estéticos en poco tiempo.</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="service2-features">Características (una por línea)</label>
+                            <textarea id="service2-features" rows="3">Duración: 2 a 5 años
+Gama media y alta
+Tratamiento minimamente invasivo</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="service2-price">Precio</label>
+                            <input type="text" id="service2-price" value="desde $400.000">
+                        </div>
+                        <div class="form-group">
+                            <label for="service2-video">Video ID de YouTube</label>
+                            <input type="text" id="service2-video" placeholder="ID del video de YouTube" value="jNQXAC9IVRw">
+                        </div>
+                        <div class="form-group">
+                            <label for="service2-thumbnail">Thumbnail del Video</label>
+                            <div class="image-upload">
+                                <input type="file" id="service2-thumbnail" accept="image/*" onchange="previewImage(this, 'service2-thumbnail-preview')">
+                                <div class="upload-area" onclick="document.getElementById('service2-thumbnail').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir thumbnail</span>
+                                </div>
+                                <div class="image-preview" id="service2-thumbnail-preview">
+                                    <img src="https://images.unsplash.com/photo-1606811971618-4486d14f3f99?w=200&h=100&fit=crop&auto=format&q=80" alt="Thumbnail del video">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="service-editor">
+                    <h3>Blanqueamiento</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="service3-title">Título</label>
+                            <input type="text" id="service3-title" value="Blanqueamiento">
+                        </div>
+                        <div class="form-group">
+                            <label for="service3-description">Descripción</label>
+                            <textarea id="service3-description" rows="3">Tratamiento que elimina manchas y devuelve el brillo natural a los dientes. Procedimiento seguro y rápido para corregir el tono dental.</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="service3-features">Características (una por línea)</label>
+                            <textarea id="service3-features" rows="3">Tratamiento mínimamente invasivo
+Permite corregir el color de tus dientes</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="service3-price">Precio</label>
+                            <input type="text" id="service3-price" value="desde $200.000">
+                        </div>
+                        <div class="form-group">
+                            <label for="service3-video">Video ID de YouTube</label>
+                            <input type="text" id="service3-video" placeholder="ID del video de YouTube" value="jNQXAC9IVRw">
+                        </div>
+                        <div class="form-group">
+                            <label for="service3-thumbnail">Thumbnail del Video</label>
+                            <div class="image-upload">
+                                <input type="file" id="service3-thumbnail" accept="image/*" onchange="previewImage(this, 'service3-thumbnail-preview')">
+                                <div class="upload-area" onclick="document.getElementById('service3-thumbnail').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir thumbnail</span>
+                                </div>
+                                <div class="image-preview" id="service3-thumbnail-preview">
+                                    <img src="https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=200&h=100&fit=crop&auto=format&q=80" alt="Thumbnail del video">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="service-editor">
+                    <h3>Bordes Incisales</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="service4-title">Título</label>
+                            <input type="text" id="service4-title" value="Bordes incisales">
+                        </div>
+                        <div class="form-group">
+                            <label for="service4-description">Descripción</label>
+                            <textarea id="service4-description" rows="3">Técnica sutil y conservadora que redefine la forma de los dientes para lograr una sonrisa armónica, respetando su estructura natural.</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="service4-features">Características (una por línea)</label>
+                            <textarea id="service4-features" rows="3">Tratamiento mínimamente invasivo
+Permite corregir la forma de tus dientes</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="service4-price">Precio</label>
+                            <input type="text" id="service4-price" value="desde $200.000">
+                        </div>
+                        <div class="form-group">
+                            <label for="service4-video">Video ID de YouTube</label>
+                            <input type="text" id="service4-video" placeholder="ID del video de YouTube" value="jNQXAC9IVRw">
+                        </div>
+                        <div class="form-group">
+                            <label for="service4-thumbnail">Thumbnail del Video</label>
+                            <div class="image-upload">
+                                <input type="file" id="service4-thumbnail" accept="image/*" onchange="previewImage(this, 'service4-thumbnail-preview')">
+                                <div class="upload-area" onclick="document.getElementById('service4-thumbnail').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir thumbnail</span>
+                                </div>
+                                <div class="image-preview" id="service4-thumbnail-preview">
+                                    <img src="https://images.unsplash.com/photo-1606811841689-23dfddceeee3?w=200&h=100&fit=crop&auto=format&q=80" alt="Thumbnail del video">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery Section Editor -->
+        <section class="admin-section" id="gallery-section">
+            <div class="section-header">
+                <h2><i class="fas fa-images"></i> Galería Antes/Después</h2>
+                <p>Gestiona las imágenes de casos de éxito</p>
+            </div>
+            
+            <div class="gallery-editor">
+                <div class="gallery-item-editor">
+                    <h3>Caso 1: Carillas en Porcelana</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="gallery1-title">Título del Caso</label>
+                            <input type="text" id="gallery1-title" value="Carillas en Porcelana">
+                        </div>
+                        <div class="form-group">
+                            <label for="gallery1-description">Descripción</label>
+                            <textarea id="gallery1-description" rows="2">Transformación completa con carillas de alta calidad</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="gallery1-before">Imagen Antes</label>
+                            <div class="image-upload">
+                                <input type="file" id="gallery1-before" accept="image/*" onchange="previewImage(this, 'gallery1-before-preview')">
+                                <div class="upload-area" onclick="document.getElementById('gallery1-before').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir imagen ANTES</span>
+                                </div>
+                                <div class="image-preview" id="gallery1-before-preview">
+                                    <img src="https://images.unsplash.com/photo-1606811841689-23dfddceeee3?w=200&h=150&fit=crop&auto=format&q=80" alt="Antes del tratamiento">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="gallery1-after">Imagen Después</label>
+                            <div class="image-upload">
+                                <input type="file" id="gallery1-after" accept="image/*" onchange="previewImage(this, 'gallery1-after-preview')">
+                                <div class="upload-area" onclick="document.getElementById('gallery1-after').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir imagen DESPUÉS</span>
+                                </div>
+                                <div class="image-preview" id="gallery1-after-preview">
+                                    <img src="https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=200&h=150&fit=crop&auto=format&q=80" alt="Después del tratamiento">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="gallery-item-editor">
+                    <h3>Caso 2: Blanqueamiento Dental</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="gallery2-title">Título del Caso</label>
+                            <input type="text" id="gallery2-title" value="Blanqueamiento Dental">
+                        </div>
+                        <div class="form-group">
+                            <label for="gallery2-description">Descripción</label>
+                            <textarea id="gallery2-description" rows="2">Resultado natural y brillante en una sola sesión</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="gallery2-before">Imagen Antes</label>
+                            <div class="image-upload">
+                                <input type="file" id="gallery2-before" accept="image/*" onchange="previewImage(this, 'gallery2-before-preview')">
+                                <div class="upload-area" onclick="document.getElementById('gallery2-before').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir imagen ANTES</span>
+                                </div>
+                                <div class="image-preview" id="gallery2-before-preview">
+                                    <img src="https://images.unsplash.com/photo-1606811971618-4486d14f3f99?w=200&h=150&fit=crop&auto=format&q=80" alt="Antes del tratamiento">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="gallery2-after">Imagen Después</label>
+                            <div class="image-upload">
+                                <input type="file" id="gallery2-after" accept="image/*" onchange="previewImage(this, 'gallery2-after-preview')">
+                                <div class="upload-area" onclick="document.getElementById('gallery2-after').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir imagen DESPUÉS</span>
+                                </div>
+                                <div class="image-preview" id="gallery2-after-preview">
+                                    <img src="https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=200&h=150&fit=crop&auto=format&q=80" alt="Después del tratamiento">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="gallery-item-editor">
+                    <h3>Caso 3: Diseño de Sonrisa Completo</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="gallery3-title">Título del Caso</label>
+                            <input type="text" id="gallery3-title" value="Diseño de Sonrisa Completo">
+                        </div>
+                        <div class="form-group">
+                            <label for="gallery3-description">Descripción</label>
+                            <textarea id="gallery3-description" rows="2">Transformación integral con múltiples técnicas</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="gallery3-before">Imagen Antes</label>
+                            <div class="image-upload">
+                                <input type="file" id="gallery3-before" accept="image/*" onchange="previewImage(this, 'gallery3-before-preview')">
+                                <div class="upload-area" onclick="document.getElementById('gallery3-before').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir imagen ANTES</span>
+                                </div>
+                                <div class="image-preview" id="gallery3-before-preview">
+                                    <img src="https://images.unsplash.com/photo-1606811841689-23dfddceeee3?w=200&h=150&fit=crop&auto=format&q=80" alt="Antes del tratamiento">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="gallery3-after">Imagen Después</label>
+                            <div class="image-upload">
+                                <input type="file" id="gallery3-after" accept="image/*" onchange="previewImage(this, 'gallery3-after-preview')">
+                                <div class="upload-area" onclick="document.getElementById('gallery3-after').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir imagen DESPUÉS</span>
+                                </div>
+                                <div class="image-preview" id="gallery3-after-preview">
+                                    <img src="https://images.unsplash.com/photo-1606811971618-4486d14f3f99?w=200&h=150&fit=crop&auto=format&q=80" alt="Después del tratamiento">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section Editor -->
+        <section class="admin-section" id="testimonials-section">
+            <div class="section-header">
+                <h2><i class="fas fa-quote-left"></i> Testimonios de Pacientes</h2>
+                <p>Gestiona los videos de testimonios de pacientes</p>
+            </div>
+            
+            <div class="testimonials-editor">
+                <div class="testimonial-editor">
+                    <h3>Testimonio 1: María González</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="testimonial1-name">Nombre del Paciente</label>
+                            <input type="text" id="testimonial1-name" value="María González">
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial1-treatment">Tratamiento</label>
+                            <input type="text" id="testimonial1-treatment" value="Carillas de Porcelana">
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial1-quote">Testimonio</label>
+                            <textarea id="testimonial1-quote" rows="2">Mi sonrisa cambió completamente, estoy muy feliz con el resultado</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial1-video">Video ID de YouTube</label>
+                            <input type="text" id="testimonial1-video" placeholder="ID del video de YouTube" value="jNQXAC9IVRw">
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial1-thumbnail">Foto del Paciente</label>
+                            <div class="image-upload">
+                                <input type="file" id="testimonial1-thumbnail" accept="image/*" onchange="previewImage(this, 'testimonial1-thumbnail-preview')">
+                                <div class="upload-area" onclick="document.getElementById('testimonial1-thumbnail').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir foto</span>
+                                </div>
+                                <div class="image-preview" id="testimonial1-thumbnail-preview">
+                                    <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face&auto=format&q=80" alt="Foto del paciente">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-editor">
+                    <h3>Testimonio 2: Carlos Rodríguez</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="testimonial2-name">Nombre del Paciente</label>
+                            <input type="text" id="testimonial2-name" value="Carlos Rodríguez">
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial2-treatment">Tratamiento</label>
+                            <input type="text" id="testimonial2-treatment" value="Blanqueamiento">
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial2-quote">Testimonio</label>
+                            <textarea id="testimonial2-quote" rows="2">El blanqueamiento superó mis expectativas, mis dientes se ven perfectos</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial2-video">Video ID de YouTube</label>
+                            <input type="text" id="testimonial2-video" placeholder="ID del video de YouTube" value="jNQXAC9IVRw">
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial2-thumbnail">Foto del Paciente</label>
+                            <div class="image-upload">
+                                <input type="file" id="testimonial2-thumbnail" accept="image/*" onchange="previewImage(this, 'testimonial2-thumbnail-preview')">
+                                <div class="upload-area" onclick="document.getElementById('testimonial2-thumbnail').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir foto</span>
+                                </div>
+                                <div class="image-preview" id="testimonial2-thumbnail-preview">
+                                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face&auto=format&q=80" alt="Foto del paciente">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-editor">
+                    <h3>Testimonio 3: Ana Martínez</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="testimonial3-name">Nombre del Paciente</label>
+                            <input type="text" id="testimonial3-name" value="Ana Martínez">
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial3-treatment">Tratamiento</label>
+                            <input type="text" id="testimonial3-treatment" value="Diseño de Sonrisa">
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial3-quote">Testimonio</label>
+                            <textarea id="testimonial3-quote" rows="2">La Dra. Paola es excelente, me ayudó a conseguir la sonrisa que siempre quise</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial3-video">Video ID de YouTube</label>
+                            <input type="text" id="testimonial3-video" placeholder="ID del video de YouTube" value="jNQXAC9IVRw">
+                        </div>
+                        <div class="form-group">
+                            <label for="testimonial3-thumbnail">Foto del Paciente</label>
+                            <div class="image-upload">
+                                <input type="file" id="testimonial3-thumbnail" accept="image/*" onchange="previewImage(this, 'testimonial3-thumbnail-preview')">
+                                <div class="upload-area" onclick="document.getElementById('testimonial3-thumbnail').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir foto</span>
+                                </div>
+                                <div class="image-preview" id="testimonial3-thumbnail-preview">
+                                    <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face&auto=format&q=80" alt="Foto del paciente">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section Editor -->
+        <section class="admin-section" id="contact-section">
+            <div class="section-header">
+                <h2><i class="fas fa-address-book"></i> Información de Contacto</h2>
+                <p>Actualiza los datos de contacto</p>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="contact-address">Dirección</label>
+                    <input type="text" id="contact-address" value="Calle 134 # 7B - 83 | Edificio El Bosque Consultorio 510">
+                </div>
+                <div class="form-group">
+                    <label for="contact-city">Ciudad</label>
+                    <input type="text" id="contact-city" value="Bogotá, Colombia">
+                </div>
+                <div class="form-group">
+                    <label for="contact-phone">Teléfono</label>
+                    <input type="text" id="contact-phone" value="+57 311 894 0351">
+                </div>
+                <div class="form-group">
+                    <label for="contact-email">Email</label>
+                    <input type="email" id="contact-email" value="odontologiapenaherrera@gmail.com">
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section class="admin-section" id="settings-section">
+            <div class="section-header">
+                <h2><i class="fas fa-cog"></i> Configuración General</h2>
+                <p>Ajustes generales del sitio</p>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="site-title">Título del Sitio</label>
+                    <input type="text" id="site-title" value="Odontología Peña - Herrera">
+                </div>
+                <div class="form-group">
+                    <label for="site-description">Descripción del Sitio</label>
+                    <textarea id="site-description" rows="3">Expertas en Sonrisas - Diseño de Sonrisa, Ortodoncia e Implantes Dentales</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="primary-color">Color Primario</label>
+                    <input type="color" id="primary-color" value="#4A90E2">
+                </div>
+                <div class="form-group">
+                    <label for="secondary-color">Color Secundario</label>
+                    <input type="color" id="secondary-color" value="#357ABD">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Success Message -->
+    <div class="success-message" id="success-message">
+        <i class="fas fa-check-circle"></i>
+        <span>Cambios guardados exitosamente</span>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Guardando cambios...</span>
+        </div>
+    </div>
+
+    <script src="admin-script.js"></script>
+    <script src="doctor-management-verification.js"></script>
+    <script src="label-update-verification.js"></script>
+</body>
+</html>
