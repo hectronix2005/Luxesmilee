@@ -433,6 +433,7 @@ function populateForms() {
         // Setup label updates after loading all doctors
         setTimeout(() => {
             setupDoctorLabelUpdates();
+            setupDoctorAutoSave();
         }, 200);
     }
     
@@ -563,8 +564,8 @@ function collectFormData() {
     };
     
     // Doctors - Dynamic collection
-    siteData.doctors = [];
     const doctorEditors = document.querySelectorAll('.doctor-editor');
+    const newDoctors = [];
     
     doctorEditors.forEach((editor, index) => {
         const doctorId = editor.getAttribute('data-doctor-id');
@@ -573,14 +574,20 @@ function collectFormData() {
         const experienceElement = document.getElementById(`doctor${doctorId}-experience`);
         
         if (nameElement && specialtyElement && experienceElement) {
-            siteData.doctors.push({
+            // Preserve existing image data
+            const existingDoctor = siteData.doctors && siteData.doctors[index] ? siteData.doctors[index] : null;
+            const imageData = existingDoctor?.image || localStorage.getItem(`image_doctor${doctorId}-image`) || '';
+            
+            newDoctors.push({
                 name: nameElement.value,
                 specialty: specialtyElement.value,
                 experience: parseInt(experienceElement.value) || 0,
-                image: siteData.doctors[index]?.image || ''
+                image: imageData
             });
         }
     });
+    
+    siteData.doctors = newDoctors;
     
     // Services
     siteData.services = [];
@@ -664,10 +671,16 @@ function storeImageData(inputId, imageData) {
     localStorage.setItem(`image_${inputId}`, imageData);
     
     // Update site data
-    if (inputId.includes('doctor1-image')) {
-        siteData.doctors[0].image = imageData;
-    } else if (inputId.includes('doctor2-image')) {
-        siteData.doctors[1].image = imageData;
+    if (inputId.includes('doctor') && inputId.includes('image')) {
+        // Handle all doctor images (doctor1, doctor2, doctor3, etc.)
+        const doctorMatch = inputId.match(/doctor(\d+)-image/);
+        if (doctorMatch) {
+            const doctorIndex = parseInt(doctorMatch[1]) - 1; // Convert to 0-based index
+            if (siteData.doctors && siteData.doctors[doctorIndex]) {
+                siteData.doctors[doctorIndex].image = imageData;
+                console.log(`Updated image for doctor ${doctorIndex + 1}:`, imageData.substring(0, 50) + '...');
+            }
+        }
     } else if (inputId.includes('gallery') && inputId.includes('before')) {
         const galleryIndex = parseInt(inputId.match(/\d+/)[0]) - 1;
         siteData.gallery[galleryIndex].beforeImage = imageData;
@@ -796,6 +809,27 @@ function addNewDoctor() {
     
     // Setup label updates for the new doctor
     setupDoctorLabelUpdates();
+    setupDoctorAutoSave();
+    
+    // Add change listeners for the new doctor
+    if (newDoctorElement) {
+        const specialtyInput = document.getElementById(`doctor${doctorCounter}-specialty`);
+        const experienceInput = document.getElementById(`doctor${doctorCounter}-experience`);
+        
+        if (specialtyInput) {
+            specialtyInput.addEventListener('input', function() {
+                hasUnsavedChanges = true;
+                updateSaveButton();
+            });
+        }
+        
+        if (experienceInput) {
+            experienceInput.addEventListener('input', function() {
+                hasUnsavedChanges = true;
+                updateSaveButton();
+            });
+        }
+    }
     
     showSuccessMessage('Nuevo doctor agregado y cambios guardados exitosamente');
     console.log('Nuevo doctor agregado y datos actualizados:', siteData.doctors);
@@ -888,6 +922,24 @@ function setupDoctorLabelUpdates() {
             // Add the event listener
             nameInput.addEventListener('input', nameInput._labelUpdateHandler);
         }
+        
+        // Add change listeners for specialty and experience
+        const specialtyInput = document.getElementById(`doctor${doctorId}-specialty`);
+        const experienceInput = document.getElementById(`doctor${doctorId}-experience`);
+        
+        if (specialtyInput) {
+            specialtyInput.addEventListener('input', function() {
+                hasUnsavedChanges = true;
+                updateSaveButton();
+            });
+        }
+        
+        if (experienceInput) {
+            experienceInput.addEventListener('input', function() {
+                hasUnsavedChanges = true;
+                updateSaveButton();
+            });
+        }
     });
 }
 
@@ -950,6 +1002,34 @@ function setupAutoSave() {
             saveAllChanges();
         }
     }, 30000);
+    
+    // Auto-save doctor changes immediately
+    setupDoctorAutoSave();
+}
+
+// Auto-save for doctor changes
+function setupDoctorAutoSave() {
+    // Set up auto-save for existing doctors
+    const doctorEditors = document.querySelectorAll('.doctor-editor');
+    doctorEditors.forEach((editor) => {
+        const doctorId = editor.getAttribute('data-doctor-id');
+        const nameInput = document.getElementById(`doctor${doctorId}-name`);
+        const specialtyInput = document.getElementById(`doctor${doctorId}-specialty`);
+        const experienceInput = document.getElementById(`doctor${doctorId}-experience`);
+        
+        // Add auto-save listeners
+        [nameInput, specialtyInput, experienceInput].forEach(input => {
+            if (input) {
+                input.addEventListener('blur', function() {
+                    // Auto-save when user leaves the field
+                    if (hasUnsavedChanges) {
+                        console.log('Auto-saving doctor changes...');
+                        saveAllChanges();
+                    }
+                });
+            }
+        });
+    });
 }
 
 // Export Site Data
