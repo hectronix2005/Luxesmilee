@@ -565,28 +565,43 @@ function collectFormData() {
     
     // Doctors - Dynamic collection
     const doctorEditors = document.querySelectorAll('.doctor-editor');
+    console.log('🔍 Found doctor editors:', doctorEditors.length);
     const newDoctors = [];
     
     doctorEditors.forEach((editor, index) => {
         const doctorId = editor.getAttribute('data-doctor-id');
+        console.log(`👨‍⚕️ Processing doctor ${index + 1} with ID: ${doctorId}`);
+        
         const nameElement = document.getElementById(`doctor${doctorId}-name`);
         const specialtyElement = document.getElementById(`doctor${doctorId}-specialty`);
         const experienceElement = document.getElementById(`doctor${doctorId}-experience`);
+        
+        console.log('📝 Doctor elements found:', {
+            name: !!nameElement,
+            specialty: !!specialtyElement,
+            experience: !!experienceElement
+        });
         
         if (nameElement && specialtyElement && experienceElement) {
             // Preserve existing image data
             const existingDoctor = siteData.doctors && siteData.doctors[index] ? siteData.doctors[index] : null;
             const imageData = existingDoctor?.image || localStorage.getItem(`image_doctor${doctorId}-image`) || '';
             
-            newDoctors.push({
+            const doctorData = {
                 name: nameElement.value,
                 specialty: specialtyElement.value,
                 experience: parseInt(experienceElement.value) || 0,
                 image: imageData
-            });
+            };
+            
+            console.log('✅ Adding doctor data:', doctorData);
+            newDoctors.push(doctorData);
+        } else {
+            console.warn('⚠️ Missing elements for doctor:', doctorId);
         }
     });
     
+    console.log('📊 Final doctors array:', newDoctors);
     siteData.doctors = newDoctors;
     
     // Services
@@ -713,7 +728,7 @@ function previewSite() {
 let doctorCounter = 2; // Start from 3 since we have 2 default doctors
 
 // Add new doctor
-function addNewDoctor() {
+async function addNewDoctor() {
     doctorCounter++;
     const doctorsEditor = document.querySelector('.doctors-editor');
     
@@ -836,18 +851,26 @@ function addNewDoctor() {
 }
 
 // Remove doctor
-function removeDoctor(doctorId) {
+async function removeDoctor(doctorId) {
+    console.log('🗑️ Attempting to remove doctor:', doctorId);
+    
     if (confirm('¿Estás seguro de que quieres eliminar este doctor? Esta acción no se puede deshacer.')) {
         const doctorElement = document.querySelector(`[data-doctor-id="${doctorId}"]`);
+        console.log('🔍 Doctor element found:', doctorElement);
+        
         if (doctorElement) {
             // Remove from DOM
             doctorElement.remove();
+            console.log('✅ Doctor element removed from DOM');
             
             // Immediately save changes to persist the deletion
+            console.log('📝 Collecting form data after deletion...');
             collectFormData();
+            console.log('📊 Site data after collection:', siteData.doctors);
             
             // Save to server API
             try {
+                console.log('🌐 Saving to server API...');
                 const response = await fetch('/api/site-data', {
                     method: 'POST',
                     headers: {
@@ -858,15 +881,18 @@ function removeDoctor(doctorId) {
                 
                 if (response.ok) {
                     const result = await response.json();
-                    console.log('Doctor deletion saved to database:', result);
+                    console.log('✅ Doctor deletion saved to database:', result);
+                } else {
+                    console.error('❌ Server API error:', response.status, response.statusText);
                 }
             } catch (apiError) {
-                console.log('Server API not available, saving locally:', apiError);
+                console.error('❌ Server API not available, saving locally:', apiError);
             }
             
             // Also save locally as backup
             localStorage.setItem('siteData', JSON.stringify(siteData));
             sessionStorage.setItem('siteData', JSON.stringify(siteData));
+            console.log('💾 Data saved to localStorage and sessionStorage');
             
             // Update main site
             updateMainSite();
@@ -875,8 +901,12 @@ function removeDoctor(doctorId) {
             updateSaveButton();
             showSuccessMessage('Doctor eliminado y cambios guardados exitosamente');
             
-            console.log('Doctor eliminado y datos actualizados:', siteData.doctors);
+            console.log('🎉 Doctor eliminado y datos actualizados:', siteData.doctors);
+        } else {
+            console.error('❌ Doctor element not found for ID:', doctorId);
         }
+    } else {
+        console.log('❌ Doctor deletion cancelled by user');
     }
 }
 
