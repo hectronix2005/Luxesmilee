@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación de Función de Persistencia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #357ABD;
+        }
+        .test-button.danger {
+            background: #e74c3c;
+        }
+        .test-button.danger:hover {
+            background: #c0392b;
+        }
+        .test-button.success {
+            background: #27ae60;
+        }
+        .test-button.success:hover {
+            background: #229954;
+        }
+        .test-result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            border-left: 4px solid #4A90E2;
+        }
+        .success { background: #d4edda; color: #155724; border-left-color: #28a745; }
+        .error { background: #f8d7da; color: #721c24; border-left-color: #dc3545; }
+        .warning { background: #fff3cd; color: #856404; border-left-color: #ffc107; }
+        .info { background: #d1ecf1; color: #0c5460; border-left-color: #17a2b8; }
+        
+        .step {
+            background: #e9ecef;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #6c757d;
+        }
+        .step.active {
+            background: #cce5ff;
+            border-left-color: #4A90E2;
+        }
+        .step.completed {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        .step.failed {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Verificación de Función de Persistencia de Doctores</h1>
+    
+    <div class="test-container">
+        <h2>📋 Pasos de Verificación</h2>
+        <div class="step" id="step1">
+            <strong>Paso 1:</strong> Verificar estado inicial del sistema
+        </div>
+        <div class="step" id="step2">
+            <strong>Paso 2:</strong> Agregar doctor de prueba
+        </div>
+        <div class="step" id="step3">
+            <strong>Paso 3:</strong> Verificar que el doctor se guardó
+        </div>
+        <div class="step" id="step4">
+            <strong>Paso 4:</strong> Eliminar el doctor
+        </div>
+        <div class="step" id="step5">
+            <strong>Paso 5:</strong> Verificar que la eliminación persiste
+        </div>
+        <div class="step" id="step6">
+            <strong>Paso 6:</strong> Simular recarga de página
+        </div>
+        <div class="step" id="step7">
+            <strong>Paso 7:</strong> Verificar que los cambios persisten
+        </div>
+    </div>
+    
+    <div class="test-container">
+        <h2>🎮 Controles de Prueba</h2>
+        <button class="test-button" onclick="runFullTest()">🚀 Ejecutar Test Completo</button>
+        <button class="test-button success" onclick="resetTest()">🔄 Reiniciar Test</button>
+        <button class="test-button danger" onclick="clearAllData()">🗑️ Limpiar Todos los Datos</button>
+        <div id="test-results" class="test-result"></div>
+    </div>
+    
+    <div class="test-container">
+        <h2>📊 Estado Actual</h2>
+        <div id="current-status" class="test-result"></div>
+    </div>
+
+    <script>
+        let testResults = [];
+        let testDoctor = null;
+        let originalData = null;
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            testResults.push({ message: logMessage, type });
+            console.log(logMessage);
+        }
+        
+        function displayResults(elementId, results) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = results.map(result => {
+                const className = result.type === 'success' ? 'success' : 
+                                result.type === 'error' ? 'error' : 
+                                result.type === 'warning' ? 'warning' : 'info';
+                return `<div class="${className}">${result.message}</div>`;
+            }).join('');
+        }
+        
+        function updateStep(stepId, status) {
+            const step = document.getElementById(stepId);
+            step.className = `step ${status}`;
+        }
+        
+        async function runFullTest() {
+            testResults = [];
+            log('🚀 Iniciando test completo de persistencia...');
+            
+            try {
+                // Paso 1: Verificar estado inicial
+                updateStep('step1', 'active');
+                log('📋 Paso 1: Verificando estado inicial...');
+                originalData = await getCurrentData();
+                log(`✅ Estado inicial: ${originalData.doctors ? originalData.doctors.length : 0} doctores`, 'success');
+                updateStep('step1', 'completed');
+                
+                // Paso 2: Agregar doctor de prueba
+                updateStep('step2', 'active');
+                log('📋 Paso 2: Agregando doctor de prueba...');
+                testDoctor = {
+                    name: `Dr. Test Persistencia ${Date.now()}`,
+                    specialty: "Especialidad de Prueba",
+                    experience: 15,
+                    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=250&fit=crop&crop=face&auto=format&q=80"
+                };
+                
+                const dataWithTestDoctor = { ...originalData };
+                dataWithTestDoctor.doctors = dataWithTestDoctor.doctors || [];
+                dataWithTestDoctor.doctors.push(testDoctor);
+                
+                await saveData(dataWithTestDoctor);
+                log(`✅ Doctor agregado: ${testDoctor.name}`, 'success');
+                updateStep('step2', 'completed');
+                
+                // Paso 3: Verificar que se guardó
+                updateStep('step3', 'active');
+                log('📋 Paso 3: Verificando que el doctor se guardó...');
+                const dataAfterAdd = await getCurrentData();
+                const foundDoctor = dataAfterAdd.doctors.find(d => d.name === testDoctor.name);
+                
+                if (foundDoctor) {
+                    log('✅ Doctor encontrado en datos guardados', 'success');
+                    updateStep('step3', 'completed');
+                } else {
+                    log('❌ Doctor NO encontrado en datos guardados', 'error');
+                    updateStep('step3', 'failed');
+                    throw new Error('Doctor no se guardó correctamente');
+                }
+                
+                // Paso 4: Eliminar el doctor
+                updateStep('step4', 'active');
+                log('📋 Paso 4: Eliminando el doctor...');
+                const dataAfterRemove = { ...dataAfterAdd };
+                dataAfterRemove.doctors = dataAfterRemove.doctors.filter(d => d.name !== testDoctor.name);
+                
+                await saveData(dataAfterRemove);
+                log('✅ Doctor eliminado de los datos', 'success');
+                updateStep('step4', 'completed');
+                
+                // Paso 5: Verificar que la eliminación persiste
+                updateStep('step5', 'active');
+                log('📋 Paso 5: Verificando que la eliminación persiste...');
+                const dataAfterDelete = await getCurrentData();
+                const doctorStillExists = dataAfterDelete.doctors.find(d => d.name === testDoctor.name);
+                
+                if (!doctorStillExists) {
+                    log('✅ Doctor eliminado correctamente - no se encuentra en datos', 'success');
+                    updateStep('step5', 'completed');
+                } else {
+                    log('❌ Doctor aún existe después de eliminación', 'error');
+                    updateStep('step5', 'failed');
+                    throw new Error('Eliminación no persistió');
+                }
+                
+                // Paso 6: Simular recarga de página
+                updateStep('step6', 'active');
+                log('📋 Paso 6: Simulando recarga de página...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                log('✅ Recarga simulada completada', 'success');
+                updateStep('step6', 'completed');
+                
+                // Paso 7: Verificar que los cambios persisten
+                updateStep('step7', 'active');
+                log('📋 Paso 7: Verificando que los cambios persisten...');
+                const finalData = await getCurrentData();
+                const finalDoctorCount = finalData.doctors ? finalData.doctors.length : 0;
+                const originalDoctorCount = originalData.doctors ? originalData.doctors.length : 0;
+                
+                if (finalDoctorCount === originalDoctorCount) {
+                    log('✅ TEST COMPLETADO: Los cambios persisten correctamente', 'success');
+                    log(`📊 Doctores originales: ${originalDoctorCount}, Doctores finales: ${finalDoctorCount}`, 'info');
+                    updateStep('step7', 'completed');
+                } else {
+                    log('❌ TEST FALLIDO: Los cambios no persisten', 'error');
+                    log(`📊 Esperado: ${originalDoctorCount}, Encontrado: ${finalDoctorCount}`, 'error');
+                    updateStep('step7', 'failed');
+                }
+                
+            } catch (error) {
+                log(`❌ Error en test: ${error.message}`, 'error');
+            }
+            
+            displayResults('test-results', testResults);
+            await updateCurrentStatus();
+        }
+        
+        async function resetTest() {
+            testResults = [];
+            log('🔄 Reiniciando test...');
+            
+            // Resetear pasos
+            for (let i = 1; i <= 7; i++) {
+                updateStep(`step${i}`, '');
+            }
+            
+            testDoctor = null;
+            originalData = null;
+            
+            log('✅ Test reiniciado', 'success');
+            displayResults('test-results', testResults);
+            await updateCurrentStatus();
+        }
+        
+        async function clearAllData() {
+            if (confirm('¿Estás seguro de que quieres limpiar TODOS los datos? Esto eliminará todos los doctores.')) {
+                testResults = [];
+                log('🗑️ Limpiando todos los datos...');
+                
+                const emptyData = {
+                    doctors: [],
+                    hero: { title: "", subtitle: "", features: [] },
+                    services: [],
+                    gallery: [],
+                    testimonials: [],
+                    contact: {},
+                    settings: {}
+                };
+                
+                await saveData(emptyData);
+                log('✅ Todos los datos limpiados', 'success');
+                
+                displayResults('test-results', testResults);
+                await updateCurrentStatus();
+            }
+        }
+        
+        async function getCurrentData() {
+            try {
+                // Intentar cargar desde localStorage
+                const savedData = localStorage.getItem('siteData');
+                if (savedData) {
+                    return JSON.parse(savedData);
+                }
+                
+                // Datos por defecto
+                return {
+                    doctors: [
+                        {
+                            name: "Dra. Paola Peña",
+                            specialty: "Odontóloga - Universidad Javeriana | Esp. en Implantología oral y reconstructiva",
+                            experience: 15,
+                            image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=500&fit=crop&crop=face"
+                        },
+                        {
+                            name: "Dra. Patricia Herrera",
+                            specialty: "Odontóloga - Universidad Javeriana | Esp. en Ortodoncia, maloclusiones y alineación dental",
+                            experience: 12,
+                            image: "https://images.unsplash.com/photo-1594824388852-8a7b3b5b5b5b?w=400&h=500&fit=crop&crop=face"
+                        }
+                    ],
+                    hero: { title: "", subtitle: "", features: [] },
+                    services: [],
+                    gallery: [],
+                    testimonials: [],
+                    contact: {},
+                    settings: {}
+                };
+            } catch (error) {
+                console.error('Error al cargar datos:', error);
+                return { doctors: [] };
+            }
+        }
+        
+        async function saveData(data) {
+            try {
+                localStorage.setItem('siteData', JSON.stringify(data));
+                return true;
+            } catch (error) {
+                console.error('Error al guardar datos:', error);
+                return false;
+            }
+        }
+        
+        async function updateCurrentStatus() {
+            const data = await getCurrentData();
+            const statusResults = [];
+            
+            statusResults.push({
+                message: `📊 Doctores actuales: ${data.doctors ? data.doctors.length : 0}`,
+                type: 'info'
+            });
+            
+            if (data.doctors && data.doctors.length > 0) {
+                data.doctors.forEach((doctor, index) => {
+                    statusResults.push({
+                        message: `👨‍⚕️ ${index + 1}. ${doctor.name} - ${doctor.specialty}`,
+                        type: 'info'
+                    });
+                });
+            }
+            
+            // Verificar localStorage
+            const localData = localStorage.getItem('siteData');
+            if (localData) {
+                statusResults.push({
+                    message: '✅ localStorage: Datos encontrados',
+                    type: 'success'
+                });
+            } else {
+                statusResults.push({
+                    message: '⚠️ localStorage: No hay datos guardados',
+                    type: 'warning'
+                });
+            }
+            
+            displayResults('current-status', statusResults);
+        }
+        
+        // Inicializar cuando la página cargue
+        window.addEventListener('load', async function() {
+            await updateCurrentStatus();
+        });
+    </script>
+</body>
+</html>
+

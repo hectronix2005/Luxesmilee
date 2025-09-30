@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Doctor Persistence Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .doctor-item {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4A90E2;
+        }
+        .btn {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #357ABD;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test Doctor Persistence Debug</h1>
+    
+    <div class="test-section">
+        <h2>📊 Estado Actual de los Datos</h2>
+        <button class="btn" onclick="checkDataStatus()">Verificar Estado de Datos</button>
+        <button class="btn" onclick="clearAllData()">Limpiar Todos los Datos</button>
+        <div id="data-status" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>👨‍⚕️ Doctores Actuales</h2>
+        <div id="doctors-list"></div>
+        <button class="btn" onclick="addTestDoctor()">Agregar Doctor de Prueba</button>
+        <button class="btn btn-danger" onclick="removeTestDoctor()">Eliminar Doctor de Prueba</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Simulación de Eliminación</h2>
+        <button class="btn" onclick="simulateDoctorDeletion()">Simular Eliminación de Doctor</button>
+        <button class="btn" onclick="simulatePageReload()">Simular Recarga de Página</button>
+        <div id="simulation-log" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 Log de Actividades</h2>
+        <button class="btn" onclick="clearLog()">Limpiar Log</button>
+        <div id="activity-log" class="log"></div>
+    </div>
+
+    <script>
+        let siteData = {};
+        let logMessages = [];
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            logMessages.push(logMessage);
+            console.log(logMessage);
+            
+            const logElement = document.getElementById('activity-log');
+            logElement.textContent = logMessages.join('\n');
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            logMessages = [];
+            document.getElementById('activity-log').textContent = '';
+        }
+
+        function checkDataStatus() {
+            log('🔍 Verificando estado de los datos...');
+            
+            const statusDiv = document.getElementById('data-status');
+            let statusHTML = '';
+            
+            // Check localStorage
+            const localData = localStorage.getItem('siteData');
+            if (localData) {
+                try {
+                    const parsed = JSON.parse(localData);
+                    statusHTML += '✅ localStorage: Datos encontrados\n';
+                    statusHTML += `   - Doctores: ${parsed.doctors ? parsed.doctors.length : 0}\n`;
+                    if (parsed.doctors) {
+                        parsed.doctors.forEach((doctor, index) => {
+                            statusHTML += `     ${index + 1}. ${doctor.name}\n`;
+                        });
+                    }
+                } catch (e) {
+                    statusHTML += '❌ localStorage: Error al parsear datos\n';
+                }
+            } else {
+                statusHTML += '⚠️ localStorage: No hay datos\n';
+            }
+            
+            // Check sessionStorage
+            const sessionData = sessionStorage.getItem('siteData');
+            if (sessionData) {
+                try {
+                    const parsed = JSON.parse(sessionData);
+                    statusHTML += '✅ sessionStorage: Datos encontrados\n';
+                    statusHTML += `   - Doctores: ${parsed.doctors ? parsed.doctors.length : 0}\n`;
+                } catch (e) {
+                    statusHTML += '❌ sessionStorage: Error al parsear datos\n';
+                }
+            } else {
+                statusHTML += '⚠️ sessionStorage: No hay datos\n';
+            }
+            
+            statusDiv.textContent = statusHTML;
+            log('✅ Estado de datos verificado');
+        }
+
+        function clearAllData() {
+            localStorage.removeItem('siteData');
+            sessionStorage.removeItem('siteData');
+            log('🗑️ Todos los datos limpiados');
+            checkDataStatus();
+            updateDoctorsList();
+        }
+
+        function loadSiteData() {
+            log('📥 Cargando datos del sitio...');
+            
+            // Try localStorage first
+            const localData = localStorage.getItem('siteData');
+            if (localData) {
+                try {
+                    siteData = JSON.parse(localData);
+                    log('✅ Datos cargados desde localStorage');
+                    return;
+                } catch (e) {
+                    log('❌ Error al parsear datos de localStorage: ' + e.message);
+                }
+            }
+            
+            // Try sessionStorage
+            const sessionData = sessionStorage.getItem('siteData');
+            if (sessionData) {
+                try {
+                    siteData = JSON.parse(sessionData);
+                    log('✅ Datos cargados desde sessionStorage');
+                    return;
+                } catch (e) {
+                    log('❌ Error al parsear datos de sessionStorage: ' + e.message);
+                }
+            }
+            
+            // Load default data
+            siteData = {
+                doctors: [
+                    {
+                        name: "Dra. Paola Peña",
+                        specialty: "Odontóloga - Universidad Javeriana | Esp. en Implantología oral y reconstructiva",
+                        experience: 15,
+                        image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=500&fit=crop&crop=face"
+                    },
+                    {
+                        name: "Dra. Patricia Herrera",
+                        specialty: "Odontóloga - Universidad Javeriana | Esp. en Ortodoncia, maloclusiones y alineación dental",
+                        experience: 12,
+                        image: "https://images.unsplash.com/photo-1594824388852-8a7b3b5b5b5b?w=400&h=500&fit=crop&crop=face"
+                    }
+                ]
+            };
+            log('ℹ️ Datos por defecto cargados');
+        }
+
+        function saveSiteData() {
+            log('💾 Guardando datos del sitio...');
+            
+            try {
+                localStorage.setItem('siteData', JSON.stringify(siteData));
+                sessionStorage.setItem('siteData', JSON.stringify(siteData));
+                log('✅ Datos guardados en localStorage y sessionStorage');
+                return true;
+            } catch (e) {
+                log('❌ Error al guardar datos: ' + e.message);
+                return false;
+            }
+        }
+
+        function updateDoctorsList() {
+            const doctorsList = document.getElementById('doctors-list');
+            
+            if (!siteData.doctors || siteData.doctors.length === 0) {
+                doctorsList.innerHTML = '<p>No hay doctores registrados</p>';
+                return;
+            }
+            
+            let html = '';
+            siteData.doctors.forEach((doctor, index) => {
+                html += `
+                    <div class="doctor-item">
+                        <h4>${doctor.name}</h4>
+                        <p><strong>Especialidad:</strong> ${doctor.specialty}</p>
+                        <p><strong>Experiencia:</strong> ${doctor.experience} años</p>
+                        <button class="btn btn-danger" onclick="removeDoctorByIndex(${index})">Eliminar</button>
+                    </div>
+                `;
+            });
+            
+            doctorsList.innerHTML = html;
+        }
+
+        function addTestDoctor() {
+            if (!siteData.doctors) {
+                siteData.doctors = [];
+            }
+            
+            const newDoctor = {
+                name: `Dr. Test ${Date.now()}`,
+                specialty: "Especialidad de Prueba",
+                experience: 5,
+                image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=500&fit=crop&crop=face"
+            };
+            
+            siteData.doctors.push(newDoctor);
+            saveSiteData();
+            updateDoctorsList();
+            log(`✅ Doctor de prueba agregado: ${newDoctor.name}`);
+        }
+
+        function removeDoctorByIndex(index) {
+            if (siteData.doctors && siteData.doctors[index]) {
+                const doctorName = siteData.doctors[index].name;
+                siteData.doctors.splice(index, 1);
+                saveSiteData();
+                updateDoctorsList();
+                log(`🗑️ Doctor eliminado: ${doctorName}`);
+            }
+        }
+
+        function removeTestDoctor() {
+            if (siteData.doctors && siteData.doctors.length > 0) {
+                const lastIndex = siteData.doctors.length - 1;
+                removeDoctorByIndex(lastIndex);
+            } else {
+                log('⚠️ No hay doctores para eliminar');
+            }
+        }
+
+        function simulateDoctorDeletion() {
+            log('🧪 Simulando eliminación de doctor...');
+            
+            if (!siteData.doctors || siteData.doctors.length === 0) {
+                log('⚠️ No hay doctores para eliminar');
+                return;
+            }
+            
+            // Simulate the removal process
+            const doctorToRemove = siteData.doctors[0];
+            log(`🗑️ Eliminando doctor: ${doctorToRemove.name}`);
+            
+            // Remove from array
+            siteData.doctors.splice(0, 1);
+            log(`📊 Doctores restantes: ${siteData.doctors.length}`);
+            
+            // Save immediately
+            const saveSuccess = saveSiteData();
+            if (saveSuccess) {
+                log('✅ Eliminación guardada exitosamente');
+            } else {
+                log('❌ Error al guardar eliminación');
+            }
+            
+            updateDoctorsList();
+        }
+
+        function simulatePageReload() {
+            log('🔄 Simulando recarga de página...');
+            
+            // Clear current data
+            siteData = {};
+            
+            // Reload data (simulate page reload)
+            loadSiteData();
+            updateDoctorsList();
+            
+            log('✅ Recarga simulada completada');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 Test Doctor Persistence Debug iniciado');
+            loadSiteData();
+            updateDoctorsList();
+            checkDataStatus();
+        });
+    </script>
+</body>
+</html>

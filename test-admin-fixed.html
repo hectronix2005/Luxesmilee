@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Script Fixed</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .admin-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .doctors-editor {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #fafafa;
+        }
+        .doctor-editor {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+        }
+        .doctor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .doctor-header h3 {
+            margin: 0;
+            color: #4A90E2;
+        }
+        .btn-remove {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-remove:hover {
+            background: #c0392b;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-button {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #357ABD;
+        }
+        .test-button.danger {
+            background: #e74c3c;
+        }
+        .test-button.danger:hover {
+            background: #c0392b;
+        }
+        .test-button.success {
+            background: #27ae60;
+        }
+        .test-button.success:hover {
+            background: #229954;
+        }
+        .test-result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            border-left: 4px solid #4A90E2;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { background: #d4edda; color: #155724; border-left-color: #28a745; }
+        .error { background: #f8d7da; color: #721c24; border-left-color: #dc3545; }
+        .warning { background: #fff3cd; color: #856404; border-left-color: #ffc107; }
+        .info { background: #d1ecf1; color: #0c5460; border-left-color: #17a2b8; }
+        
+        .image-upload {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .upload-area {
+            border: 2px dashed #ddd;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        .upload-area:hover {
+            border-color: #4A90E2;
+        }
+        .image-preview img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test Admin Script Fixed</h1>
+    
+    <div class="admin-container">
+        <h2>🎮 Controles de Test</h2>
+        <button class="test-button" onclick="simulateLogin()">🔐 Simular Login</button>
+        <button class="test-button" onclick="simulateLogout()">🚪 Simular Logout</button>
+        <button class="test-button success" onclick="addNewDoctorFixed()">➕ Agregar Doctor</button>
+        <button class="test-button" onclick="saveAllChangesFixed()">💾 Guardar Cambios</button>
+        <button class="test-button danger" onclick="clearAllData()">🗑️ Limpiar Datos</button>
+        <button class="test-button" onclick="runPersistenceTest()">🧪 Test de Persistencia</button>
+        <div id="test-results" class="test-result"></div>
+    </div>
+    
+    <div class="admin-container">
+        <h2>👨‍⚕️ Doctores (Admin Script Fixed)</h2>
+        <div class="doctors-editor" id="doctors-editor">
+            <!-- Los doctores se cargarán aquí -->
+        </div>
+    </div>
+
+    <!-- Campos simulados del admin real -->
+    <div style="display: none;">
+        <input type="text" id="hero-title" value="">
+        <input type="text" id="hero-subtitle" value="">
+        <textarea id="hero-features"></textarea>
+        <input type="text" id="site-title" value="">
+        <input type="text" id="site-description" value="">
+        <input type="color" id="primary-color" value="#4A90E2">
+        <input type="color" id="secondary-color" value="#357ABD">
+        <input type="text" id="tab-title" value="">
+        <input type="text" id="contact-address" value="">
+        <input type="text" id="contact-city" value="">
+        <input type="text" id="contact-phone" value="">
+        <input type="text" id="contact-email" value="">
+        
+        <!-- Services -->
+        <input type="text" id="service1-title" value="">
+        <input type="text" id="service1-description" value="">
+        <textarea id="service1-features"></textarea>
+        <input type="text" id="service1-price" value="">
+        <input type="text" id="service1-video" value="">
+        
+        <input type="text" id="service2-title" value="">
+        <input type="text" id="service2-description" value="">
+        <textarea id="service2-features"></textarea>
+        <input type="text" id="service2-price" value="">
+        <input type="text" id="service2-video" value="">
+        
+        <input type="text" id="service3-title" value="">
+        <input type="text" id="service3-description" value="">
+        <textarea id="service3-features"></textarea>
+        <input type="text" id="service3-price" value="">
+        <input type="text" id="service3-video" value="">
+        
+        <input type="text" id="service4-title" value="">
+        <input type="text" id="service4-description" value="">
+        <textarea id="service4-features"></textarea>
+        <input type="text" id="service4-price" value="">
+        <input type="text" id="service4-video" value="">
+        
+        <!-- Gallery -->
+        <input type="text" id="gallery1-title" value="">
+        <input type="text" id="gallery1-description" value="">
+        <input type="text" id="gallery2-title" value="">
+        <input type="text" id="gallery2-description" value="">
+        <input type="text" id="gallery3-title" value="">
+        <input type="text" id="gallery3-description" value="">
+        
+        <!-- Testimonials -->
+        <input type="text" id="testimonial1-name" value="">
+        <input type="text" id="testimonial1-treatment" value="">
+        <textarea id="testimonial1-quote"></textarea>
+        <input type="text" id="testimonial1-video" value="">
+        
+        <input type="text" id="testimonial2-name" value="">
+        <input type="text" id="testimonial2-treatment" value="">
+        <textarea id="testimonial2-quote"></textarea>
+        <input type="text" id="testimonial2-video" value="">
+        
+        <input type="text" id="testimonial3-name" value="">
+        <input type="text" id="testimonial3-treatment" value="">
+        <textarea id="testimonial3-quote"></textarea>
+        <input type="text" id="testimonial3-video" value="">
+    </div>
+
+    <script src="admin-script-fixed.js"></script>
+    <script>
+        let testResults = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            testResults.push({ message: logMessage, type });
+            console.log(logMessage);
+            
+            const resultsDiv = document.getElementById('test-results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.textContent = logMessage;
+            resultsDiv.appendChild(resultDiv);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        // Simular login
+        function simulateLogin() {
+            log('🔐 Simulando login...');
+            localStorage.setItem('adminLoggedIn', 'true');
+            loadSiteDataFixed();
+            log('✅ Login simulado - cargando datos', 'success');
+        }
+        
+        // Simular logout
+        function simulateLogout() {
+            log('🚪 Simulando logout...');
+            localStorage.removeItem('adminLoggedIn');
+            // NO limpiar siteData - esto es clave
+            log('✅ Logout simulado - datos preservados', 'success');
+        }
+        
+        // Limpiar todos los datos
+        function clearAllData() {
+            if (confirm('¿Estás seguro de que quieres limpiar TODOS los datos?')) {
+                log('🗑️ Limpiando todos los datos...');
+                localStorage.removeItem('siteData');
+                localStorage.removeItem('adminLoggedIn');
+                document.querySelector('.doctors-editor').innerHTML = '';
+                log('✅ Todos los datos limpiados', 'success');
+            }
+        }
+        
+        // Test de persistencia completo
+        async function runPersistenceTest() {
+            log('🧪 Iniciando test de persistencia...');
+            
+            try {
+                // Paso 1: Agregar doctor
+                log('📝 Paso 1: Agregando doctor de prueba...');
+                const testDoctor = {
+                    name: `Dr. Persistencia Test ${Date.now()}`,
+                    specialty: "Test de Persistencia",
+                    experience: 15,
+                    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=250&fit=crop&crop=face&auto=format&q=80"
+                };
+                
+                // Agregar doctor directamente a siteData
+                siteData.doctors = siteData.doctors || [];
+                siteData.doctors.push(testDoctor);
+                await saveSiteDataFixed(siteData);
+                populateFormsFixed();
+                log(`✅ Doctor agregado: ${testDoctor.name}`, 'success');
+                
+                // Paso 2: Simular logout/login
+                log('📝 Paso 2: Simulando logout/login...');
+                localStorage.removeItem('adminLoggedIn');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                localStorage.setItem('adminLoggedIn', 'true');
+                await loadSiteDataFixed();
+                log('✅ Logout/login simulado', 'success');
+                
+                // Paso 3: Verificar que el doctor persiste
+                log('📝 Paso 3: Verificando persistencia...');
+                const foundDoctor = siteData.doctors.find(d => d.name === testDoctor.name);
+                if (foundDoctor) {
+                    log('✅ Doctor encontrado después de logout/login', 'success');
+                    
+                    // Paso 4: Eliminar el doctor
+                    log('📝 Paso 4: Eliminando doctor...');
+                    const doctorElement = document.querySelector(`[data-doctor-id]`);
+                    if (doctorElement) {
+                        const doctorId = doctorElement.getAttribute('data-doctor-id');
+                        await removeDoctorFixed(doctorId);
+                        
+                        // Paso 5: Simular logout/login nuevamente
+                        log('📝 Paso 5: Simulando logout/login después de eliminación...');
+                        localStorage.removeItem('adminLoggedIn');
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        localStorage.setItem('adminLoggedIn', 'true');
+                        await loadSiteDataFixed();
+                        
+                        // Paso 6: Verificar que la eliminación persiste
+                        log('📝 Paso 6: Verificando que la eliminación persiste...');
+                        const doctorStillExists = siteData.doctors.find(d => d.name === testDoctor.name);
+                        if (!doctorStillExists) {
+                            log('🎉 TEST COMPLETADO: Persistencia funcionando correctamente', 'success');
+                        } else {
+                            log('❌ TEST FALLIDO: Doctor aún existe después de eliminación', 'error');
+                        }
+                    } else {
+                        log('❌ No se encontró doctor para eliminar', 'error');
+                    }
+                } else {
+                    log('❌ Doctor no encontrado después de logout/login', 'error');
+                }
+                
+            } catch (error) {
+                log('❌ Error en test de persistencia: ' + error.message, 'error');
+            }
+        }
+        
+        // Inicializar cuando la página cargue
+        window.addEventListener('load', function() {
+            log('🚀 Test Admin Script Fixed inicializado', 'info');
+            loadSiteDataFixed();
+        });
+    </script>
+</body>
+</html>
+

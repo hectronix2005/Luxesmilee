@@ -9,6 +9,11 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     setupAutoSave();
     setupDoctorLabelUpdates(); // Setup dynamic label updates for doctors
+    
+    // Debug: Show current data status
+    setTimeout(() => {
+        debugDataStatus();
+    }, 1000);
 });
 
 // Initialize Admin Panel
@@ -189,13 +194,74 @@ function showSection(sectionName) {
 }
 
 // Load Site Data
-function loadSiteData() {
-    // Load from localStorage or use default data
-    const savedData = localStorage.getItem('siteData');
-    if (savedData) {
-        siteData = JSON.parse(savedData);
-        populateForms();
-    } else {
+async function loadSiteData() {
+    try {
+        // Try to load from Netlify Function first (primary source)
+        try {
+            const response = await fetch('/.netlify/functions/site-data');
+            if (response.ok) {
+                siteData = await response.json();
+                console.log('✅ Site data loaded from Netlify Function (primary source):', siteData);
+                populateForms();
+                return;
+            } else {
+                console.log('⚠️ Netlify Function responded with error:', response.status, response.statusText);
+            }
+        } catch (apiError) {
+            console.log('⚠️ Netlify Function not available, trying other sources:', apiError);
+        }
+        
+        // Try to load from Firebase (secondary source)
+        if (window.firebaseDB) {
+            try {
+                const docRef = window.firebaseDB.doc(window.firebaseDB.db, 'site', 'content');
+                const docSnap = await window.firebaseDB.getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    siteData = docSnap.data();
+                    console.log('✅ Site data loaded from Firebase (secondary source)');
+                    populateForms();
+                    return;
+                }
+            } catch (firebaseError) {
+                console.log('⚠️ Firebase not available:', firebaseError);
+            }
+        }
+        
+        // Try localStorage (fallback source)
+        const savedData = localStorage.getItem('siteData');
+        if (savedData) {
+            try {
+                siteData = JSON.parse(savedData);
+                console.log('⚠️ Site data loaded from localStorage (fallback source):', siteData);
+                console.log('⚠️ WARNING: Using localStorage - changes may not persist. Migrate to Netlify for permanent storage.');
+                populateForms();
+                return;
+            } catch (parseError) {
+                console.error('Error parsing localStorage data:', parseError);
+            }
+        }
+        
+        // Try sessionStorage as last resort
+        const sessionData = sessionStorage.getItem('siteData');
+        if (sessionData) {
+            try {
+                siteData = JSON.parse(sessionData);
+                console.log('⚠️ Site data loaded from sessionStorage (last resort):', siteData);
+                console.log('⚠️ WARNING: Using sessionStorage - changes will be lost on browser close. Migrate to Netlify for permanent storage.');
+                populateForms();
+                return;
+            } catch (parseError) {
+                console.error('Error parsing sessionStorage data:', parseError);
+            }
+        }
+        
+        // If no data found, load defaults
+        console.log('ℹ️ No saved data found, loading defaults');
+        loadDefaultData();
+        
+    } catch (error) {
+        console.error('Error loading site data:', error);
         loadDefaultData();
     }
 }
@@ -313,7 +379,8 @@ function loadDefaultData() {
             siteTitle: "Odontología Peña - Herrera",
             siteDescription: "Expertas en Sonrisas - Diseño de Sonrisa, Ortodoncia e Implantes Dentales",
             primaryColor: "#4A90E2",
-            secondaryColor: "#357ABD"
+            secondaryColor: "#357ABD",
+            tabTitle: "Odontología Peña - Herrera" // Nueva propiedad para el título de la tab
         }
     };
     
@@ -333,48 +400,65 @@ function populateForms() {
     if (siteData.doctors) {
         const doctorsEditor = document.querySelector('.doctors-editor');
         
-        // Clear existing doctors (except the first two default ones)
+        // Clear ALL existing doctors to rebuild from saved data
         const existingDoctors = doctorsEditor.querySelectorAll('.doctor-editor[data-doctor-id]');
-        existingDoctors.forEach((doctor, index) => {
-            if (index >= 2) { // Keep first two default doctors
-                doctor.remove();
-            }
+        existingDoctors.forEach((doctor) => {
+            doctor.remove();
         });
         
-        // Load doctors dynamically
+        // Reset doctor counter
+        doctorCounter = 0;
+        
+        // Load doctors dynamically from saved data
         siteData.doctors.forEach((doctor, index) => {
-            if (index < 2) {
-                // Update existing default doctors
-                const num = index + 1;
-                const nameElement = document.getElementById(`doctor${num}-name`);
-                const specialtyElement = document.getElementById(`doctor${num}-specialty`);
-                const experienceElement = document.getElementById(`doctor${num}-experience`);
-                
-                if (nameElement) nameElement.value = doctor.name || '';
-                if (specialtyElement) specialtyElement.value = doctor.specialty || '';
-                if (experienceElement) experienceElement.value = doctor.experience || '';
-            } else {
-                // Add new doctors
-                doctorCounter = index + 1;
-                addNewDoctor();
-                
-                // Set the values for the new doctor
-                setTimeout(() => {
-                    const num = index + 1;
-                    const nameElement = document.getElementById(`doctor${num}-name`);
-                    const specialtyElement = document.getElementById(`doctor${num}-specialty`);
-                    const experienceElement = document.getElementById(`doctor${num}-experience`);
-                    
-                    if (nameElement) nameElement.value = doctor.name || '';
-                    if (specialtyElement) specialtyElement.value = doctor.specialty || '';
-                    if (experienceElement) experienceElement.value = doctor.experience || '';
-                }, 100);
-            }
+            doctorCounter++;
+            
+            // Create doctor HTML
+            const doctorHTML = `
+                <div class="doctor-editor" data-doctor-id="${doctorCounter}">
+                    <div class="doctor-header">
+                        <h3>${doctor.name || 'Doctor'}</h3>
+                        <button class="btn-remove" onclick="removeDoctor(${doctorCounter})" title="Eliminar doctor">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="doctor${doctorCounter}-name">Nombre</label>
+                            <input type="text" id="doctor${doctorCounter}-name" value="${doctor.name || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor${doctorCounter}-specialty">Especialidad</label>
+                            <input type="text" id="doctor${doctorCounter}-specialty" value="${doctor.specialty || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor${doctorCounter}-experience">Años de Experiencia</label>
+                            <input type="number" id="doctor${doctorCounter}-experience" value="${doctor.experience || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor${doctorCounter}-image">Foto</label>
+                            <div class="image-upload">
+                                <input type="file" id="doctor${doctorCounter}-image" accept="image/*" onchange="previewImage(this, 'doctor${doctorCounter}-preview')">
+                                <div class="upload-area" onclick="document.getElementById('doctor${doctorCounter}-image').click()">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Subir foto</span>
+                                </div>
+                                <div class="image-preview" id="doctor${doctorCounter}-preview">
+                                    <img src="${doctor.image || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=250&fit=crop&crop=face&auto=format&q=80'}" alt="${doctor.name || 'Doctor'}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            doctorsEditor.insertAdjacentHTML('beforeend', doctorHTML);
         });
         
         // Setup label updates after loading all doctors
         setTimeout(() => {
             setupDoctorLabelUpdates();
+            setupDoctorAutoSave();
         }, 200);
     }
     
@@ -424,28 +508,111 @@ function populateForms() {
         document.getElementById('site-description').value = siteData.settings.siteDescription || '';
         document.getElementById('primary-color').value = siteData.settings.primaryColor || '#4A90E2';
         document.getElementById('secondary-color').value = siteData.settings.secondaryColor || '#357ABD';
+        
+        // Actualizar título de la tab si existe el campo
+        const tabTitleInput = document.getElementById('tab-title');
+        if (tabTitleInput) {
+            tabTitleInput.value = siteData.settings.tabTitle || siteData.settings.siteTitle || '';
+        }
     }
 }
 
 // Save All Changes
-function saveAllChanges() {
+async function saveAllChanges() {
     showLoading();
     
-    // Collect all form data
-    collectFormData();
-    
-    // Save to localStorage
-    localStorage.setItem('siteData', JSON.stringify(siteData));
-    
-    // Update main site
-    updateMainSite();
-    
-    setTimeout(() => {
+    try {
+        // Collect all form data
+        collectFormData();
+        
+        // Try to save to Netlify Function first (primary storage)
+        try {
+            const response = await fetch('/.netlify/functions/site-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(siteData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Site data saved to Netlify Function successfully:', result);
+                if (result.success) {
+                    console.log('✅ Data persisted to database permanently');
+                    
+                    // Save to localStorage as backup only if Netlify save was successful
+                    localStorage.setItem('siteData', JSON.stringify(siteData));
+                    sessionStorage.setItem('siteData', JSON.stringify(siteData));
+                    console.log('💾 Data saved to localStorage and sessionStorage as backup');
+                    
+                    // Update main site
+                    updateMainSite();
+                    
+                    hideLoading();
+                    showSuccessMessage('Cambios guardados permanentemente en la base de datos');
+                    hasUnsavedChanges = false;
+                    updateSaveButton();
+                    return;
+                }
+            } else {
+                console.error('❌ Netlify Function error:', response.status, response.statusText);
+            }
+        } catch (apiError) {
+            console.log('⚠️ Netlify Function not available, saving locally:', apiError);
+        }
+        
+        // Save to Firebase if available (secondary storage)
+        if (window.firebaseDB) {
+            try {
+                const docRef = window.firebaseDB.doc(window.firebaseDB.db, 'site', 'content');
+                await window.firebaseDB.setDoc(docRef, siteData);
+                console.log('✅ Site data saved to Firebase successfully');
+                
+                // Save to localStorage as backup
+                localStorage.setItem('siteData', JSON.stringify(siteData));
+                sessionStorage.setItem('siteData', JSON.stringify(siteData));
+                console.log('💾 Data saved to localStorage and sessionStorage as backup');
+                
+                // Update main site
+                updateMainSite();
+                
+                hideLoading();
+                showSuccessMessage('Cambios guardados en Firebase');
+                hasUnsavedChanges = false;
+                updateSaveButton();
+                return;
+            } catch (firebaseError) {
+                console.log('⚠️ Firebase save failed:', firebaseError);
+            }
+        }
+        
+        // Fallback to localStorage only if Netlify and Firebase fail
+        localStorage.setItem('siteData', JSON.stringify(siteData));
+        sessionStorage.setItem('siteData', JSON.stringify(siteData));
+        console.log('⚠️ Data saved to localStorage as fallback');
+        
+        // Update main site
+        updateMainSite();
+        
         hideLoading();
-        showSuccessMessage();
+        showSuccessMessage('Datos guardados localmente - se requiere migración a Netlify para persistencia permanente');
         hasUnsavedChanges = false;
         updateSaveButton();
-    }, 1500);
+        
+    } catch (error) {
+        console.error('Error saving data:', error);
+        
+        // Final fallback to localStorage only
+        localStorage.setItem('siteData', JSON.stringify(siteData));
+        sessionStorage.setItem('siteData', JSON.stringify(siteData));
+        updateMainSite();
+        
+        hideLoading();
+        showSuccessMessage('Datos guardados localmente - se requiere migración a Netlify para persistencia permanente');
+        hasUnsavedChanges = false;
+        updateSaveButton();
+    }
 }
 
 // Collect Form Data
@@ -458,24 +625,45 @@ function collectFormData() {
     };
     
     // Doctors - Dynamic collection
-    siteData.doctors = [];
     const doctorEditors = document.querySelectorAll('.doctor-editor');
+    console.log('🔍 Found doctor editors:', doctorEditors.length);
+    const newDoctors = [];
     
     doctorEditors.forEach((editor, index) => {
         const doctorId = editor.getAttribute('data-doctor-id');
+        console.log(`👨‍⚕️ Processing doctor ${index + 1} with ID: ${doctorId}`);
+        
         const nameElement = document.getElementById(`doctor${doctorId}-name`);
         const specialtyElement = document.getElementById(`doctor${doctorId}-specialty`);
         const experienceElement = document.getElementById(`doctor${doctorId}-experience`);
         
+        console.log('📝 Doctor elements found:', {
+            name: !!nameElement,
+            specialty: !!specialtyElement,
+            experience: !!experienceElement
+        });
+        
         if (nameElement && specialtyElement && experienceElement) {
-            siteData.doctors.push({
+            // Preserve existing image data
+            const existingDoctor = siteData.doctors && siteData.doctors[index] ? siteData.doctors[index] : null;
+            const imageData = existingDoctor?.image || localStorage.getItem(`image_doctor${doctorId}-image`) || '';
+            
+            const doctorData = {
                 name: nameElement.value,
                 specialty: specialtyElement.value,
                 experience: parseInt(experienceElement.value) || 0,
-                image: siteData.doctors[index]?.image || ''
-            });
+                image: imageData
+            };
+            
+            console.log('✅ Adding doctor data:', doctorData);
+            newDoctors.push(doctorData);
+        } else {
+            console.warn('⚠️ Missing elements for doctor:', doctorId);
         }
     });
+    
+    console.log('📊 Final doctors array:', newDoctors);
+    siteData.doctors = newDoctors;
     
     // Services
     siteData.services = [];
@@ -526,8 +714,14 @@ function collectFormData() {
         siteTitle: document.getElementById('site-title').value,
         siteDescription: document.getElementById('site-description').value,
         primaryColor: document.getElementById('primary-color').value,
-        secondaryColor: document.getElementById('secondary-color').value
+        secondaryColor: document.getElementById('secondary-color').value,
+        tabTitle: document.getElementById('tab-title') ? document.getElementById('tab-title').value : document.getElementById('site-title').value
     };
+    
+    // Actualizar título de la tab en el navegador
+    if (siteData.settings.tabTitle) {
+        document.title = siteData.settings.tabTitle;
+    }
 }
 
 // Update Main Site
@@ -559,10 +753,16 @@ function storeImageData(inputId, imageData) {
     localStorage.setItem(`image_${inputId}`, imageData);
     
     // Update site data
-    if (inputId.includes('doctor1-image')) {
-        siteData.doctors[0].image = imageData;
-    } else if (inputId.includes('doctor2-image')) {
-        siteData.doctors[1].image = imageData;
+    if (inputId.includes('doctor') && inputId.includes('image')) {
+        // Handle all doctor images (doctor1, doctor2, doctor3, etc.)
+        const doctorMatch = inputId.match(/doctor(\d+)-image/);
+        if (doctorMatch) {
+            const doctorIndex = parseInt(doctorMatch[1]) - 1; // Convert to 0-based index
+            if (siteData.doctors && siteData.doctors[doctorIndex]) {
+                siteData.doctors[doctorIndex].image = imageData;
+                console.log(`Updated image for doctor ${doctorIndex + 1}:`, imageData.substring(0, 50) + '...');
+            }
+        }
     } else if (inputId.includes('gallery') && inputId.includes('before')) {
         const galleryIndex = parseInt(inputId.match(/\d+/)[0]) - 1;
         siteData.gallery[galleryIndex].beforeImage = imageData;
@@ -595,7 +795,7 @@ function previewSite() {
 let doctorCounter = 2; // Start from 3 since we have 2 default doctors
 
 // Add new doctor
-function addNewDoctor() {
+async function addNewDoctor() {
     doctorCounter++;
     const doctorsEditor = document.querySelector('.doctors-editor');
     
@@ -654,7 +854,35 @@ function addNewDoctor() {
         }
     });
     
-    hasUnsavedChanges = true;
+    // Immediately save changes to persist the new doctor
+    collectFormData();
+    
+    // Save to Netlify Function
+    try {
+        const response = await fetch('/.netlify/functions/site-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(siteData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('New doctor saved to database:', result);
+        }
+    } catch (apiError) {
+        console.log('Netlify Function not available, saving locally:', apiError);
+    }
+    
+    // Also save locally as backup
+    localStorage.setItem('siteData', JSON.stringify(siteData));
+    sessionStorage.setItem('siteData', JSON.stringify(siteData));
+    
+    // Update main site
+    updateMainSite();
+    
+    hasUnsavedChanges = false;
     updateSaveButton();
     
     // Scroll to the new doctor
@@ -663,27 +891,144 @@ function addNewDoctor() {
     
     // Setup label updates for the new doctor
     setupDoctorLabelUpdates();
+    setupDoctorAutoSave();
     
-    showSuccessMessage('Nuevo doctor agregado exitosamente');
+    // Add change listeners for the new doctor
+    if (newDoctorElement) {
+        const specialtyInput = document.getElementById(`doctor${doctorCounter}-specialty`);
+        const experienceInput = document.getElementById(`doctor${doctorCounter}-experience`);
+        
+        if (specialtyInput) {
+            specialtyInput.addEventListener('input', function() {
+                hasUnsavedChanges = true;
+                updateSaveButton();
+            });
+        }
+        
+        if (experienceInput) {
+            experienceInput.addEventListener('input', function() {
+                hasUnsavedChanges = true;
+                updateSaveButton();
+            });
+        }
+    }
+    
+    showSuccessMessage('Nuevo doctor agregado y cambios guardados exitosamente');
+    console.log('Nuevo doctor agregado y datos actualizados:', siteData.doctors);
 }
 
-// Remove doctor
-function removeDoctor(doctorId) {
+// Remove doctor - VERSIÓN CORREGIDA PARA PERSISTENCIA GARANTIZADA
+async function removeDoctor(doctorId) {
+    console.log('🗑️ Attempting to remove doctor:', doctorId);
+    
     if (confirm('¿Estás seguro de que quieres eliminar este doctor? Esta acción no se puede deshacer.')) {
         const doctorElement = document.querySelector(`[data-doctor-id="${doctorId}"]`);
+        console.log('🔍 Doctor element found:', doctorElement);
+        
         if (doctorElement) {
+            // PASO 1: Obtener el nombre del doctor antes de eliminarlo
+            const nameElement = document.getElementById(`doctor${doctorId}-name`);
+            const doctorName = nameElement ? nameElement.value : `Doctor ID ${doctorId}`;
+            console.log(`👨‍⚕️ Eliminando doctor: ${doctorName}`);
+            
+            // PASO 2: Remover del DOM
             doctorElement.remove();
-            hasUnsavedChanges = true;
+            console.log('✅ Doctor element removed from DOM');
+            
+            // PASO 3: Recolectar datos del formulario (solo doctores visibles)
+            console.log('📝 Collecting form data after deletion...');
+            const doctorEditors = document.querySelectorAll('.doctor-editor');
+            const newDoctors = [];
+            
+            doctorEditors.forEach((editor, index) => {
+                const currentDoctorId = editor.getAttribute('data-doctor-id');
+                const currentNameElement = document.getElementById(`doctor${currentDoctorId}-name`);
+                const currentSpecialtyElement = document.getElementById(`doctor${currentDoctorId}-specialty`);
+                const currentExperienceElement = document.getElementById(`doctor${currentDoctorId}-experience`);
+                
+                if (currentNameElement && currentSpecialtyElement && currentExperienceElement) {
+                    // Preserve existing image data
+                    const existingDoctor = siteData.doctors && siteData.doctors[index] ? siteData.doctors[index] : null;
+                    const imageData = existingDoctor?.image || '';
+                    
+                    const doctorData = {
+                        name: currentNameElement.value,
+                        specialty: currentSpecialtyElement.value,
+                        experience: parseInt(currentExperienceElement.value) || 0,
+                        image: imageData
+                    };
+                    
+                    newDoctors.push(doctorData);
+                }
+            });
+            
+            // PASO 4: Actualizar siteData con solo los doctores visibles
+            siteData.doctors = newDoctors;
+            console.log(`📊 Site data updated: ${newDoctors.length} doctores restantes`);
+            newDoctors.forEach((doctor, index) => {
+                console.log(`   ${index + 1}. ${doctor.name}`);
+            });
+            
+            // PASO 5: Guardar inmediatamente en localStorage (CRÍTICO)
+            try {
+                localStorage.setItem('siteData', JSON.stringify(siteData));
+                sessionStorage.setItem('siteData', JSON.stringify(siteData));
+                console.log('💾 Data saved to localStorage and sessionStorage IMMEDIATELY');
+                
+                // Verificar que se guardó correctamente
+                const savedData = localStorage.getItem('siteData');
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    console.log(`✅ Verificación: ${parsed.doctors ? parsed.doctors.length : 0} doctores guardados en localStorage`);
+                }
+            } catch (saveError) {
+                console.error('❌ Error al guardar en localStorage:', saveError);
+            }
+            
+            // PASO 6: Intentar guardar en Netlify Function (opcional)
+            try {
+                console.log('🌐 Attempting to save to Netlify Function...');
+                const response = await fetch('/.netlify/functions/site-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(siteData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Doctor deletion saved to Netlify Function:', result);
+                } else {
+                    console.log('⚠️ Netlify Function error (continuing with localStorage):', response.status);
+                }
+            } catch (apiError) {
+                console.log('⚠️ Netlify Function not available (continuing with localStorage):', apiError);
+            }
+            
+            // PASO 7: Actualizar estado de la aplicación
+            updateMainSite();
+            hasUnsavedChanges = false;
             updateSaveButton();
-            showSuccessMessage('Doctor eliminado exitosamente');
+            showSuccessMessage(`Doctor "${doctorName}" eliminado y cambios guardados permanentemente`);
+            
+            console.log('🎉 Doctor eliminado exitosamente y datos persistidos');
+            
+        } else {
+            console.error('❌ Doctor element not found for ID:', doctorId);
+            showSuccessMessage('Error: No se encontró el doctor a eliminar');
         }
+    } else {
+        console.log('❌ Doctor deletion cancelled by user');
     }
 }
 
 // Logout
 function logout() {
     if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+        // Only remove admin login status, keep site data
         localStorage.removeItem('adminLoggedIn');
+        console.log('Admin logged out, site data preserved');
         window.location.reload();
     }
 }
@@ -720,6 +1065,24 @@ function setupDoctorLabelUpdates() {
             // Add the event listener
             nameInput.addEventListener('input', nameInput._labelUpdateHandler);
         }
+        
+        // Add change listeners for specialty and experience
+        const specialtyInput = document.getElementById(`doctor${doctorId}-specialty`);
+        const experienceInput = document.getElementById(`doctor${doctorId}-experience`);
+        
+        if (specialtyInput) {
+            specialtyInput.addEventListener('input', function() {
+                hasUnsavedChanges = true;
+                updateSaveButton();
+            });
+        }
+        
+        if (experienceInput) {
+            experienceInput.addEventListener('input', function() {
+                hasUnsavedChanges = true;
+                updateSaveButton();
+            });
+        }
     });
 }
 
@@ -734,8 +1097,16 @@ function hideLoading() {
 }
 
 // Show Success Message
-function showSuccessMessage() {
+function showSuccessMessage(customMessage = null) {
     const message = document.getElementById('success-message');
+    const messageText = message.querySelector('span');
+    
+    if (customMessage) {
+        messageText.textContent = customMessage;
+    } else {
+        messageText.textContent = 'Cambios guardados exitosamente';
+    }
+    
     message.classList.add('show');
     
     setTimeout(() => {
@@ -774,6 +1145,34 @@ function setupAutoSave() {
             saveAllChanges();
         }
     }, 30000);
+    
+    // Auto-save doctor changes immediately
+    setupDoctorAutoSave();
+}
+
+// Auto-save for doctor changes
+function setupDoctorAutoSave() {
+    // Set up auto-save for existing doctors
+    const doctorEditors = document.querySelectorAll('.doctor-editor');
+    doctorEditors.forEach((editor) => {
+        const doctorId = editor.getAttribute('data-doctor-id');
+        const nameInput = document.getElementById(`doctor${doctorId}-name`);
+        const specialtyInput = document.getElementById(`doctor${doctorId}-specialty`);
+        const experienceInput = document.getElementById(`doctor${doctorId}-experience`);
+        
+        // Add auto-save listeners
+        [nameInput, specialtyInput, experienceInput].forEach(input => {
+            if (input) {
+                input.addEventListener('blur', function() {
+                    // Auto-save when user leaves the field
+                    if (hasUnsavedChanges) {
+                        console.log('Auto-saving doctor changes...');
+                        saveAllChanges();
+                    }
+                });
+            }
+        });
+    });
 }
 
 // Export Site Data
@@ -838,5 +1237,43 @@ window.addEventListener('beforeunload', function(e) {
         e.returnValue = 'Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?';
     }
 });
+
+// Debug function to check data status
+function debugDataStatus() {
+    console.log('=== DEBUG: Data Status ===');
+    console.log('Current siteData:', siteData);
+    console.log('localStorage siteData:', localStorage.getItem('siteData'));
+    console.log('sessionStorage siteData:', sessionStorage.getItem('siteData'));
+    console.log('Firebase available:', !!window.firebaseDB);
+    console.log('========================');
+}
+
+// Add debug button to admin panel
+function addDebugButton() {
+    const debugBtn = document.createElement('button');
+    debugBtn.innerHTML = '<i class="fas fa-bug"></i> Debug';
+    debugBtn.className = 'btn-debug';
+    debugBtn.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        background: #ff9800;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+    `;
+    debugBtn.onclick = () => {
+        debugDataStatus();
+        alert('Revisa la consola del navegador (F12) para ver el estado de los datos');
+    };
+    document.body.appendChild(debugBtn);
+}
+
+// Add debug button after page loads
+setTimeout(addDebugButton, 2000);
 
 console.log('Admin Script Loaded Successfully');

@@ -10,10 +10,23 @@ document.addEventListener('DOMContentLoaded', function() {
     showAdminAccess();
 });
 
-// Load site data from Firebase or localStorage
+// Load site data from Netlify Function, Firebase or localStorage
 async function loadSiteData() {
     try {
-        // Try to load from Firebase first
+        // Try to load from Netlify Function first
+        try {
+            const response = await fetch('/.netlify/functions/site-data');
+            if (response.ok) {
+                siteData = await response.json();
+                console.log('Site data loaded from Netlify Function');
+                updateSiteContent();
+                return;
+            }
+        } catch (apiError) {
+            console.log('Netlify Function not available, trying other sources:', apiError);
+        }
+        
+        // Try to load from Firebase
         if (window.firebaseDB) {
             const docRef = window.firebaseDB.doc(window.firebaseDB.db, 'site', 'content');
             const docSnap = await window.firebaseDB.getDoc(docRef);

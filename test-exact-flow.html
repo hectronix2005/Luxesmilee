@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Exact Flow - Eliminar, Guardar, Cerrar, Iniciar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .doctor-editor {
+            background: #f9f9f9;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4A90E2;
+            position: relative;
+        }
+        .doctor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .doctor-header h3 {
+            margin: 0;
+            color: #4A90E2;
+        }
+        .btn-remove {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-remove:hover {
+            background: #c82333;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .form-group input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .btn {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #357ABD;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .doctors-editor {
+            margin: 20px 0;
+        }
+        .section-actions {
+            margin: 15px 0;
+        }
+        .step {
+            background: #e3f2fd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #2196f3;
+        }
+        .step h4 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Exact Flow - Eliminar, Guardar, Cerrar, Iniciar</h1>
+    <p>Esta página simula exactamente el flujo que describes: eliminar doctor, guardar cambios, cerrar sesión, iniciar sesión.</p>
+    
+    <div class="test-section">
+        <h2>📋 Flujo de Prueba</h2>
+        <div class="step">
+            <h4>Paso 1: Estado Inicial</h4>
+            <p>Verificar doctores existentes</p>
+            <button class="btn" onclick="checkInitialState()">Verificar Estado Inicial</button>
+        </div>
+        
+        <div class="step">
+            <h4>Paso 2: Eliminar Doctor</h4>
+            <p>Eliminar un doctor específico</p>
+            <button class="btn btn-danger" onclick="removeFirstDoctor()">Eliminar Primer Doctor</button>
+        </div>
+        
+        <div class="step">
+            <h4>Paso 3: Guardar Cambios</h4>
+            <p>Guardar los cambios realizados</p>
+            <button class="btn btn-success" onclick="saveChanges()">Guardar Cambios</button>
+        </div>
+        
+        <div class="step">
+            <h4>Paso 4: Cerrar Sesión</h4>
+            <p>Simular cierre de sesión</p>
+            <button class="btn btn-warning" onclick="simulateLogout()">Cerrar Sesión</button>
+        </div>
+        
+        <div class="step">
+            <h4>Paso 5: Iniciar Sesión</h4>
+            <p>Simular inicio de sesión y recarga de datos</p>
+            <button class="btn" onclick="simulateLogin()">Iniciar Sesión</button>
+        </div>
+        
+        <div class="step">
+            <h4>Paso 6: Verificar Resultado</h4>
+            <p>Verificar si el doctor eliminado volvió a aparecer</p>
+            <button class="btn" onclick="checkFinalState()">Verificar Estado Final</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>👨‍⚕️ Doctores Actuales</h2>
+        <div class="doctors-editor" id="doctors-editor">
+            <!-- Los doctores se cargarán aquí dinámicamente -->
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Estado de los Datos</h2>
+        <button class="btn" onclick="checkDataStatus()">Verificar Estado</button>
+        <button class="btn btn-warning" onclick="clearAllData()">Limpiar Datos</button>
+        <div id="data-status" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 Log de Actividades</h2>
+        <button class="btn" onclick="clearLog()">Limpiar Log</button>
+        <div id="activity-log" class="log"></div>
+    </div>
+
+    <script>
+        let siteData = {};
+        let hasUnsavedChanges = false;
+        let doctorCounter = 0;
+        let logMessages = [];
+        let initialDoctorsCount = 0;
+        let removedDoctorName = '';
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            logMessages.push(logMessage);
+            console.log(logMessage);
+            
+            const logElement = document.getElementById('activity-log');
+            logElement.textContent = logMessages.join('\n');
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            logMessages = [];
+            document.getElementById('activity-log').textContent = '';
+        }
+
+        function checkDataStatus() {
+            log('🔍 Verificando estado de los datos...');
+            
+            const statusDiv = document.getElementById('data-status');
+            let statusHTML = '';
+            
+            // Check localStorage
+            const localData = localStorage.getItem('siteData');
+            if (localData) {
+                try {
+                    const parsed = JSON.parse(localData);
+                    statusHTML += '✅ localStorage: Datos encontrados\n';
+                    statusHTML += `   - Doctores: ${parsed.doctors ? parsed.doctors.length : 0}\n`;
+                    if (parsed.doctors) {
+                        parsed.doctors.forEach((doctor, index) => {
+                            statusHTML += `     ${index + 1}. ${doctor.name}\n`;
+                        });
+                    }
+                } catch (e) {
+                    statusHTML += '❌ localStorage: Error al parsear datos\n';
+                }
+            } else {
+                statusHTML += '⚠️ localStorage: No hay datos\n';
+            }
+            
+            // Check sessionStorage
+            const sessionData = sessionStorage.getItem('siteData');
+            if (sessionData) {
+                try {
+                    const parsed = JSON.parse(sessionData);
+                    statusHTML += '✅ sessionStorage: Datos encontrados\n';
+                    statusHTML += `   - Doctores: ${parsed.doctors ? parsed.doctors.length : 0}\n`;
+                } catch (e) {
+                    statusHTML += '❌ sessionStorage: Error al parsear datos\n';
+                }
+            } else {
+                statusHTML += '⚠️ sessionStorage: No hay datos\n';
+            }
+            
+            statusDiv.textContent = statusHTML;
+            log('✅ Estado de datos verificado');
+        }
+
+        function clearAllData() {
+            localStorage.removeItem('siteData');
+            sessionStorage.removeItem('siteData');
+            localStorage.removeItem('adminLoggedIn');
+            log('🗑️ Todos los datos limpiados');
+            checkDataStatus();
+            loadSiteData();
+            populateForms();
+        }
+
+        function loadSiteData() {
+            log('📥 Cargando datos del sitio...');
+            
+            // Try localStorage first
+            const localData = localStorage.getItem('siteData');
+            if (localData) {
+                try {
+                    siteData = JSON.parse(localData);
+                    log('✅ Datos cargados desde localStorage');
+                    return;
+                } catch (e) {
+                    log('❌ Error al parsear datos de localStorage: ' + e.message);
+                }
+            }
+            
+            // Try sessionStorage
+            const sessionData = sessionStorage.getItem('siteData');
+            if (sessionData) {
+                try {
+                    siteData = JSON.parse(sessionData);
+                    log('✅ Datos cargados desde sessionStorage');
+                    return;
+                } catch (e) {
+                    log('❌ Error al parsear datos de sessionStorage: ' + e.message);
+                }
+            }
+            
+            // Load default data
+            siteData = {
+                doctors: [
+                    {
+                        name: "Dra. Paola Peña",
+                        specialty: "Odontóloga - Universidad Javeriana | Esp. en Implantología oral y reconstructiva",
+                        experience: 15,
+                        image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=500&fit=crop&crop=face"
+                    },
+                    {
+                        name: "Dra. Patricia Herrera",
+                        specialty: "Odontóloga - Universidad Javeriana | Esp. en Ortodoncia, maloclusiones y alineación dental",
+                        experience: 12,
+                        image: "https://images.unsplash.com/photo-1594824388852-8a7b3b5b5b5b?w=400&h=500&fit=crop&crop=face"
+                    }
+                ]
+            };
+            log('ℹ️ Datos por defecto cargados');
+        }
+
+        function populateForms() {
+            log('📝 Poblando formularios...');
+            
+            const doctorsEditor = document.getElementById('doctors-editor');
+            doctorsEditor.innerHTML = '';
+            
+            if (siteData.doctors) {
+                doctorCounter = 0;
+                
+                siteData.doctors.forEach((doctor, index) => {
+                    doctorCounter++;
+                    
+                    const doctorHTML = `
+                        <div class="doctor-editor" data-doctor-id="${doctorCounter}">
+                            <div class="doctor-header">
+                                <h3>${doctor.name || 'Doctor'}</h3>
+                                <button class="btn-remove" onclick="removeDoctor(${doctorCounter})" title="Eliminar doctor">
+                                    🗑️ Eliminar
+                                </button>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="doctor${doctorCounter}-name">Nombre</label>
+                                    <input type="text" id="doctor${doctorCounter}-name" value="${doctor.name || ''}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="doctor${doctorCounter}-specialty">Especialidad</label>
+                                    <input type="text" id="doctor${doctorCounter}-specialty" value="${doctor.specialty || ''}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="doctor${doctorCounter}-experience">Años de Experiencia</label>
+                                    <input type="number" id="doctor${doctorCounter}-experience" value="${doctor.experience || ''}">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    doctorsEditor.insertAdjacentHTML('beforeend', doctorHTML);
+                });
+                
+                log(`✅ ${siteData.doctors.length} doctores cargados en el formulario`);
+            }
+        }
+
+        function collectFormData() {
+            log('📊 Recolectando datos del formulario...');
+            
+            const doctorEditors = document.querySelectorAll('.doctor-editor');
+            const newDoctors = [];
+            
+            doctorEditors.forEach((editor, index) => {
+                const doctorId = editor.getAttribute('data-doctor-id');
+                
+                const nameElement = document.getElementById(`doctor${doctorId}-name`);
+                const specialtyElement = document.getElementById(`doctor${doctorId}-specialty`);
+                const experienceElement = document.getElementById(`doctor${doctorId}-experience`);
+                
+                if (nameElement && specialtyElement && experienceElement) {
+                    const doctorData = {
+                        name: nameElement.value,
+                        specialty: specialtyElement.value,
+                        experience: parseInt(experienceElement.value) || 0,
+                        image: siteData.doctors[index]?.image || ''
+                    };
+                    
+                    newDoctors.push(doctorData);
+                }
+            });
+            
+            siteData.doctors = newDoctors;
+            log(`📊 ${newDoctors.length} doctores recolectados del formulario`);
+        }
+
+        function saveChanges() {
+            log('💾 Guardando todos los cambios...');
+            
+            collectFormData();
+            
+            try {
+                localStorage.setItem('siteData', JSON.stringify(siteData));
+                sessionStorage.setItem('siteData', JSON.stringify(siteData));
+                log('✅ Cambios guardados en localStorage y sessionStorage');
+                hasUnsavedChanges = false;
+                checkDataStatus();
+                return true;
+            } catch (e) {
+                log('❌ Error al guardar cambios: ' + e.message);
+                return false;
+            }
+        }
+
+        function removeDoctor(doctorId) {
+            log(`🗑️ Eliminando doctor ID: ${doctorId}`);
+            
+            const doctorElement = document.querySelector(`[data-doctor-id="${doctorId}"]`);
+            
+            if (doctorElement) {
+                // Obtener nombre antes de eliminar
+                const nameElement = document.getElementById(`doctor${doctorId}-name`);
+                const doctorName = nameElement ? nameElement.value : `Doctor ID ${doctorId}`;
+                removedDoctorName = doctorName;
+                
+                // Remove from DOM
+                doctorElement.remove();
+                log(`✅ Doctor "${doctorName}" eliminado del DOM`);
+                
+                // Immediately collect form data to update siteData
+                collectFormData();
+                log('📊 Datos recolectados después de eliminación');
+                
+                // Save changes immediately
+                const saveSuccess = saveChanges();
+                
+                if (saveSuccess) {
+                    log(`✅ Doctor "${doctorName}" eliminado y cambios guardados permanentemente`);
+                    hasUnsavedChanges = false;
+                } else {
+                    log('❌ Error al guardar eliminación');
+                }
+            } else {
+                log('❌ No se encontró el elemento del doctor');
+            }
+        }
+
+        // Funciones del flujo de prueba
+        function checkInitialState() {
+            log('📋 === PASO 1: VERIFICANDO ESTADO INICIAL ===');
+            initialDoctorsCount = siteData.doctors ? siteData.doctors.length : 0;
+            log(`📊 Doctores iniciales: ${initialDoctorsCount}`);
+            siteData.doctors.forEach((doctor, index) => {
+                log(`   ${index + 1}. ${doctor.name}`);
+            });
+            checkDataStatus();
+        }
+
+        function removeFirstDoctor() {
+            log('🗑️ === PASO 2: ELIMINANDO PRIMER DOCTOR ===');
+            if (siteData.doctors && siteData.doctors.length > 0) {
+                removeDoctor(1); // Eliminar doctor con ID 1
+            } else {
+                log('❌ No hay doctores para eliminar');
+            }
+        }
+
+        function saveChanges() {
+            log('💾 === PASO 3: GUARDANDO CAMBIOS ===');
+            const success = saveChanges();
+            if (success) {
+                log('✅ Cambios guardados exitosamente');
+            } else {
+                log('❌ Error al guardar cambios');
+            }
+        }
+
+        function simulateLogout() {
+            log('🚪 === PASO 4: SIMULANDO CIERRE DE SESIÓN ===');
+            localStorage.removeItem('adminLoggedIn');
+            log('✅ adminLoggedIn removido de localStorage');
+            log('ℹ️ Datos del sitio preservados en localStorage');
+        }
+
+        function simulateLogin() {
+            log('🔑 === PASO 5: SIMULANDO INICIO DE SESIÓN ===');
+            localStorage.setItem('adminLoggedIn', 'true');
+            log('✅ adminLoggedIn agregado a localStorage');
+            
+            // Simular recarga de datos
+            log('🔄 Recargando datos...');
+            loadSiteData();
+            populateForms();
+            log('✅ Datos recargados');
+        }
+
+        function checkFinalState() {
+            log('🔍 === PASO 6: VERIFICANDO ESTADO FINAL ===');
+            const finalDoctorsCount = siteData.doctors ? siteData.doctors.length : 0;
+            log(`📊 Doctores finales: ${finalDoctorsCount}`);
+            log(`📊 Doctores iniciales: ${initialDoctorsCount}`);
+            log(`📊 Doctor eliminado: "${removedDoctorName}"`);
+            
+            if (finalDoctorsCount === initialDoctorsCount - 1) {
+                log('✅ ÉXITO: El doctor fue eliminado correctamente y NO volvió a aparecer');
+            } else if (finalDoctorsCount === initialDoctorsCount) {
+                log('❌ FALLO: El doctor eliminado volvió a aparecer');
+                log('🔍 Verificando si el doctor eliminado está presente...');
+                const doctorExists = siteData.doctors.some(doctor => doctor.name === removedDoctorName);
+                if (doctorExists) {
+                    log(`❌ CONFIRMADO: El doctor "${removedDoctorName}" volvió a aparecer`);
+                } else {
+                    log('⚠️ El doctor no volvió a aparecer, pero el conteo no coincide');
+                }
+            } else {
+                log('⚠️ RESULTADO INESPERADO: El conteo de doctores no coincide');
+            }
+            
+            siteData.doctors.forEach((doctor, index) => {
+                log(`   ${index + 1}. ${doctor.name}`);
+            });
+            
+            checkDataStatus();
+        }
+
+        // Función para ejecutar todo el flujo automáticamente
+        function runFullTest() {
+            log('🚀 === INICIANDO PRUEBA COMPLETA AUTOMÁTICA ===');
+            
+            setTimeout(() => checkInitialState(), 1000);
+            setTimeout(() => removeFirstDoctor(), 3000);
+            setTimeout(() => saveChanges(), 5000);
+            setTimeout(() => simulateLogout(), 7000);
+            setTimeout(() => simulateLogin(), 9000);
+            setTimeout(() => checkFinalState(), 11000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 Test Exact Flow iniciado');
+            loadSiteData();
+            populateForms();
+            checkDataStatus();
+        });
+    </script>
+</body>
+</html>

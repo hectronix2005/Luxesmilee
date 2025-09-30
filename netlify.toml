@@ -72,8 +72,9 @@
 [build.processing.html]
   pretty_urls = true
 
-# Configuración de funciones (si las necesitas en el futuro)
+# Configuración de funciones
 [functions]
   directory = "netlify/functions"
+  node_bundler = "esbuild"
 
 

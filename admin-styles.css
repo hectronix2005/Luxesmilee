@@ -236,6 +236,13 @@ body {
     cursor: pointer;
 }
 
+.form-help {
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    font-style: italic;
+}
+
 /* Image Upload Styles */
 .image-upload {
     position: relative;
