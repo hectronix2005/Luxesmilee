@@ -193,76 +193,138 @@ function showSection(sectionName) {
     }
 }
 
-// Load Site Data
+// Load Site Data - VERSIÓN CORREGIDA: localStorage PRIMERO para persistencia garantizada
 async function loadSiteData() {
+    console.log('📂 === INICIANDO CARGA DE DATOS ===');
+    
     try {
-        // Try to load from Netlify Function first (primary source)
-        try {
-            const response = await fetch('/.netlify/functions/site-data');
-            if (response.ok) {
-                siteData = await response.json();
-                console.log('✅ Site data loaded from Netlify Function (primary source):', siteData);
+        // PRIORIDAD 1: localStorage (fuente principal y más confiable)
+        const savedData = localStorage.getItem('siteData');
+        if (savedData) {
+            try {
+                siteData = JSON.parse(savedData);
+                console.log('✅ PRIORIDAD 1: Datos cargados desde localStorage (fuente principal)');
+                console.log('  - Número de doctores:', siteData.doctors ? siteData.doctors.length : 0);
+                if (siteData.doctors && siteData.doctors.length > 0) {
+                    siteData.doctors.forEach((doctor, index) => {
+                        console.log(`  - Doctor ${index + 1}: "${doctor.name}" - ${doctor.specialty}`);
+                    });
+                }
                 populateForms();
+                
+                // Intentar sincronizar con Netlify Function en segundo plano (sin esperar)
+                syncToNetlifyFunction();
+                
                 return;
-            } else {
-                console.log('⚠️ Netlify Function responded with error:', response.status, response.statusText);
+            } catch (parseError) {
+                console.error('❌ Error al parsear datos de localStorage:', parseError);
             }
-        } catch (apiError) {
-            console.log('⚠️ Netlify Function not available, trying other sources:', apiError);
+        } else {
+            console.log('⚠️ No se encontraron datos en localStorage');
         }
         
-        // Try to load from Firebase (secondary source)
+        // PRIORIDAD 2: sessionStorage (si localStorage está vacío)
+        const sessionData = sessionStorage.getItem('siteData');
+        if (sessionData) {
+            try {
+                siteData = JSON.parse(sessionData);
+                console.log('✅ PRIORIDAD 2: Datos cargados desde sessionStorage');
+                console.log('  - Número de doctores:', siteData.doctors ? siteData.doctors.length : 0);
+                
+                // Guardar también en localStorage para persistencia
+                localStorage.setItem('siteData', sessionData);
+                console.log('💾 Datos copiados a localStorage para persistencia');
+                
+                populateForms();
+                return;
+            } catch (parseError) {
+                console.error('❌ Error al parsear datos de sessionStorage:', parseError);
+            }
+        } else {
+            console.log('⚠️ No se encontraron datos en sessionStorage');
+        }
+        
+        // PRIORIDAD 3: Netlify Function (solo si no hay datos locales)
+        try {
+            console.log('🌐 PRIORIDAD 3: Intentando cargar desde Netlify Function...');
+            const response = await fetch('/.netlify/functions/site-data');
+            if (response.ok) {
+                const netlifyData = await response.json();
+                if (netlifyData && netlifyData.doctors && netlifyData.doctors.length > 0) {
+                    siteData = netlifyData;
+                    console.log('✅ Datos cargados desde Netlify Function');
+                    console.log('  - Número de doctores:', siteData.doctors.length);
+                    
+                    // Guardar en localStorage para uso futuro
+                    localStorage.setItem('siteData', JSON.stringify(siteData));
+                    sessionStorage.setItem('siteData', JSON.stringify(siteData));
+                    console.log('💾 Datos guardados en localStorage y sessionStorage');
+                    
+                    populateForms();
+                    return;
+                } else {
+                    console.log('⚠️ Netlify Function retornó datos vacíos o inválidos');
+                }
+            } else {
+                console.log('⚠️ Netlify Function error:', response.status);
+            }
+        } catch (apiError) {
+            console.log('⚠️ Netlify Function no disponible:', apiError);
+        }
+        
+        // PRIORIDAD 4: Firebase (solo si no hay datos locales ni en Netlify)
         if (window.firebaseDB) {
             try {
+                console.log('🔥 PRIORIDAD 4: Intentando cargar desde Firebase...');
                 const docRef = window.firebaseDB.doc(window.firebaseDB.db, 'site', 'content');
                 const docSnap = await window.firebaseDB.getDoc(docRef);
                 
                 if (docSnap.exists()) {
                     siteData = docSnap.data();
-                    console.log('✅ Site data loaded from Firebase (secondary source)');
+                    console.log('✅ Datos cargados desde Firebase');
+                    
+                    // Guardar en localStorage para uso futuro
+                    localStorage.setItem('siteData', JSON.stringify(siteData));
+                    sessionStorage.setItem('siteData', JSON.stringify(siteData));
+                    console.log('💾 Datos guardados en localStorage y sessionStorage');
+                    
                     populateForms();
                     return;
                 }
             } catch (firebaseError) {
-                console.log('⚠️ Firebase not available:', firebaseError);
+                console.log('⚠️ Firebase no disponible:', firebaseError);
             }
         }
         
-        // Try localStorage (fallback source)
-        const savedData = localStorage.getItem('siteData');
-        if (savedData) {
-            try {
-                siteData = JSON.parse(savedData);
-                console.log('⚠️ Site data loaded from localStorage (fallback source):', siteData);
-                console.log('⚠️ WARNING: Using localStorage - changes may not persist. Migrate to Netlify for permanent storage.');
-                populateForms();
-                return;
-            } catch (parseError) {
-                console.error('Error parsing localStorage data:', parseError);
-            }
-        }
-        
-        // Try sessionStorage as last resort
-        const sessionData = sessionStorage.getItem('siteData');
-        if (sessionData) {
-            try {
-                siteData = JSON.parse(sessionData);
-                console.log('⚠️ Site data loaded from sessionStorage (last resort):', siteData);
-                console.log('⚠️ WARNING: Using sessionStorage - changes will be lost on browser close. Migrate to Netlify for permanent storage.');
-                populateForms();
-                return;
-            } catch (parseError) {
-                console.error('Error parsing sessionStorage data:', parseError);
-            }
-        }
-        
-        // If no data found, load defaults
-        console.log('ℹ️ No saved data found, loading defaults');
+        // Si no hay datos en ninguna fuente, cargar defaults
+        console.log('ℹ️ No se encontraron datos guardados, cargando datos por defecto');
         loadDefaultData();
         
     } catch (error) {
-        console.error('Error loading site data:', error);
+        console.error('❌ Error crítico al cargar datos:', error);
         loadDefaultData();
+    }
+}
+
+// Sincronizar datos con Netlify Function en segundo plano
+async function syncToNetlifyFunction() {
+    try {
+        console.log('🔄 Sincronizando datos con Netlify Function en segundo plano...');
+        const response = await fetch('/.netlify/functions/site-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(siteData)
+        });
+        
+        if (response.ok) {
+            console.log('✅ Datos sincronizados con Netlify Function');
+        } else {
+            console.log('⚠️ No se pudo sincronizar con Netlify Function:', response.status);
+        }
+    } catch (error) {
+        console.log('⚠️ Error al sincronizar con Netlify Function:', error);
     }
 }
 
