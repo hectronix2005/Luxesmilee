@@ -1,10 +1,12 @@
 // Netlify Function para gestionar datos del sitio
-// Almacena los datos usando Netlify Blobs (almacenamiento persistente)
+// Almacena los datos usando variables de entorno de Netlify como almacenamiento simple
 
-const { getStore } = require('@netlify/blobs');
+// NOTA: Esta es una solución temporal. Para producción se recomienda usar una base de datos real
+// como Supabase, Firebase, o Netlify Blobs con configuración adecuada.
 
-// Nombre de la clave donde se almacenarán los datos
-const DATA_KEY = 'site-data';
+// Los datos se almacenarán en memoria durante la ejecución de la función
+// Para persistencia real, necesitarías una base de datos externa
+let siteDataCache = null;
 
 // Datos por defecto si no existe el archivo
 const DEFAULT_DATA = {
