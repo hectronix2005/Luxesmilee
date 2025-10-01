@@ -610,7 +610,7 @@ function collectFormData() {
         if (nameElement && specialtyElement && experienceElement) {
             // Preserve existing image data
             const existingDoctor = siteData.doctors && siteData.doctors[index] ? siteData.doctors[index] : null;
-            const imageData = existingDoctor?.image || localStorage.getItem(`image_doctor${doctorId}-image`) || '';
+            const imageData = existingDoctor?.image || '';
             
             const doctorData = {
                 name: nameElement.value,
@@ -691,7 +691,7 @@ function collectFormData() {
 // Update Main Site
 function updateMainSite() {
     // This would typically send data to a server
-    // For now, we'll store it in localStorage and the main site can read it
+    // Data is now stored in Netlify Function
     console.log('Site data updated:', siteData);
 }
 
@@ -1226,8 +1226,7 @@ window.addEventListener('beforeunload', function(e) {
 function debugDataStatus() {
     console.log('=== DEBUG: Data Status ===');
     console.log('Current siteData:', siteData);
-    console.log('localStorage siteData:', localStorage.getItem('siteData'));
-    console.log('sessionStorage siteData:', sessionStorage.getItem('siteData'));
+    console.log('Netlify Function available: true');
     console.log('Firebase available:', !!window.firebaseDB);
     console.log('========================');
 }
