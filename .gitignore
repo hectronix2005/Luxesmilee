@@ -71,3 +71,6 @@ temp/
 
 # Database files
 site-data.json
+
+# Local Netlify folder
+.netlify
