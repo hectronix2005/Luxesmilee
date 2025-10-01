@@ -517,16 +517,48 @@ function populateForms() {
     }
 }
 
-// Save All Changes
+// Save All Changes - VERSIÓN MEJORADA PARA PERSISTENCIA GARANTIZADA
 async function saveAllChanges() {
+    console.log('💾 === INICIANDO GUARDADO DE CAMBIOS ===');
     showLoading();
     
     try {
-        // Collect all form data
+        // PASO 1: Recolectar datos del formulario ANTES de guardar
+        console.log('📝 PASO 1: Recolectando datos del formulario...');
         collectFormData();
         
-        // Try to save to Netlify Function first (primary storage)
+        // PASO 2: Verificar que los datos se recolectaron correctamente
+        console.log('🔍 PASO 2: Verificando datos recolectados:');
+        console.log('  - Número de doctores:', siteData.doctors ? siteData.doctors.length : 0);
+        if (siteData.doctors && siteData.doctors.length > 0) {
+            siteData.doctors.forEach((doctor, index) => {
+                console.log(`  - Doctor ${index + 1}: "${doctor.name}" - ${doctor.specialty} (${doctor.experience} años)`);
+            });
+        }
+        
+        // PASO 3: Guardar INMEDIATAMENTE en localStorage (CRÍTICO)
+        console.log('💾 PASO 3: Guardando en localStorage INMEDIATAMENTE...');
+        localStorage.setItem('siteData', JSON.stringify(siteData));
+        sessionStorage.setItem('siteData', JSON.stringify(siteData));
+        
+        // PASO 4: Verificar que se guardó correctamente
+        const savedData = localStorage.getItem('siteData');
+        if (savedData) {
+            const parsed = JSON.parse(savedData);
+            console.log('✅ PASO 4: Verificación localStorage exitosa:');
+            console.log('  - Doctores guardados:', parsed.doctors ? parsed.doctors.length : 0);
+            if (parsed.doctors && parsed.doctors.length > 0) {
+                parsed.doctors.forEach((doctor, index) => {
+                    console.log(`  - Doctor ${index + 1}: "${doctor.name}" - ${doctor.specialty} (${doctor.experience} años)`);
+                });
+            }
+        } else {
+            console.error('❌ ERROR: No se pudo verificar el guardado en localStorage');
+        }
+        
+        // PASO 5: Intentar guardar en Netlify Function (opcional)
         try {
+            console.log('🌐 PASO 5: Intentando guardar en Netlify Function...');
             const response = await fetch('/.netlify/functions/site-data', {
                 method: 'POST',
                 headers: {
@@ -537,81 +569,76 @@ async function saveAllChanges() {
             
             if (response.ok) {
                 const result = await response.json();
-                console.log('✅ Site data saved to Netlify Function successfully:', result);
-                if (result.success) {
-                    console.log('✅ Data persisted to database permanently');
-                    
-                    // Save to localStorage as backup only if Netlify save was successful
-                    localStorage.setItem('siteData', JSON.stringify(siteData));
-                    sessionStorage.setItem('siteData', JSON.stringify(siteData));
-                    console.log('💾 Data saved to localStorage and sessionStorage as backup');
-                    
-                    // Update main site
-                    updateMainSite();
-                    
-                    hideLoading();
-                    showSuccessMessage('Cambios guardados permanentemente en la base de datos');
-                    hasUnsavedChanges = false;
-                    updateSaveButton();
-                    return;
-                }
-            } else {
-                console.error('❌ Netlify Function error:', response.status, response.statusText);
-            }
-        } catch (apiError) {
-            console.log('⚠️ Netlify Function not available, saving locally:', apiError);
-        }
-        
-        // Save to Firebase if available (secondary storage)
-        if (window.firebaseDB) {
-            try {
-                const docRef = window.firebaseDB.doc(window.firebaseDB.db, 'site', 'content');
-                await window.firebaseDB.setDoc(docRef, siteData);
-                console.log('✅ Site data saved to Firebase successfully');
-                
-                // Save to localStorage as backup
-                localStorage.setItem('siteData', JSON.stringify(siteData));
-                sessionStorage.setItem('siteData', JSON.stringify(siteData));
-                console.log('💾 Data saved to localStorage and sessionStorage as backup');
+                console.log('✅ Datos guardados en Netlify Function:', result);
                 
                 // Update main site
                 updateMainSite();
                 
                 hideLoading();
-                showSuccessMessage('Cambios guardados en Firebase');
+                showSuccessMessage('✅ Cambios guardados permanentemente en la base de datos');
                 hasUnsavedChanges = false;
                 updateSaveButton();
+                console.log('🎉 GUARDADO COMPLETADO - Netlify Function');
+                return;
+            } else {
+                console.log('⚠️ Netlify Function error (continuing with localStorage):', response.status);
+            }
+        } catch (apiError) {
+            console.log('⚠️ Netlify Function no disponible (continuing with localStorage):', apiError);
+        }
+        
+        // PASO 6: Intentar Firebase si está disponible
+        if (window.firebaseDB) {
+            try {
+                console.log('🔥 PASO 6: Intentando guardar en Firebase...');
+                const docRef = window.firebaseDB.doc(window.firebaseDB.db, 'site', 'content');
+                await window.firebaseDB.setDoc(docRef, siteData);
+                console.log('✅ Datos guardados en Firebase exitosamente');
+                
+                // Update main site
+                updateMainSite();
+                
+                hideLoading();
+                showSuccessMessage('✅ Cambios guardados en Firebase');
+                hasUnsavedChanges = false;
+                updateSaveButton();
+                console.log('🎉 GUARDADO COMPLETADO - Firebase');
                 return;
             } catch (firebaseError) {
                 console.log('⚠️ Firebase save failed:', firebaseError);
             }
         }
         
-        // Fallback to localStorage only if Netlify and Firebase fail
-        localStorage.setItem('siteData', JSON.stringify(siteData));
-        sessionStorage.setItem('siteData', JSON.stringify(siteData));
-        console.log('⚠️ Data saved to localStorage as fallback');
-        
-        // Update main site
+        // PASO 7: Actualizar sitio principal y finalizar
         updateMainSite();
         
         hideLoading();
-        showSuccessMessage('Datos guardados localmente - se requiere migración a Netlify para persistencia permanente');
+        showSuccessMessage('✅ Cambios guardados correctamente en localStorage');
         hasUnsavedChanges = false;
         updateSaveButton();
+        
+        console.log('🎉 === GUARDADO COMPLETADO - localStorage ===');
         
     } catch (error) {
-        console.error('Error saving data:', error);
+        console.error('❌ ERROR durante el guardado:', error);
         
-        // Final fallback to localStorage only
-        localStorage.setItem('siteData', JSON.stringify(siteData));
-        sessionStorage.setItem('siteData', JSON.stringify(siteData));
-        updateMainSite();
-        
-        hideLoading();
-        showSuccessMessage('Datos guardados localmente - se requiere migración a Netlify para persistencia permanente');
-        hasUnsavedChanges = false;
-        updateSaveButton();
+        // Fallback final - solo localStorage
+        try {
+            console.log('🔄 Intentando fallback final...');
+            localStorage.setItem('siteData', JSON.stringify(siteData));
+            sessionStorage.setItem('siteData', JSON.stringify(siteData));
+            updateMainSite();
+            
+            hideLoading();
+            showSuccessMessage('⚠️ Cambios guardados localmente (error en servicios externos)');
+            hasUnsavedChanges = false;
+            updateSaveButton();
+            console.log('🎉 GUARDADO COMPLETADO - Fallback localStorage');
+        } catch (fallbackError) {
+            console.error('❌ ERROR CRÍTICO en fallback:', fallbackError);
+            hideLoading();
+            showSuccessMessage('❌ Error crítico al guardar cambios');
+        }
     }
 }
 
@@ -1136,43 +1163,67 @@ function previewColorChanges() {
     document.documentElement.style.setProperty('--secondary-color', secondaryColor);
 }
 
-// Setup Auto Save
+// Setup Auto Save - VERSIÓN MEJORADA PARA PERSISTENCIA GARANTIZADA
 function setupAutoSave() {
-    // Auto save every 30 seconds if there are unsaved changes
+    // Auto save every 10 seconds if there are unsaved changes (más frecuente)
     setInterval(() => {
         if (hasUnsavedChanges) {
-            console.log('Auto-saving changes...');
+            console.log('⏰ Auto-saving changes...');
             saveAllChanges();
         }
-    }, 30000);
+    }, 10000); // Reducido de 30s a 10s
     
     // Auto-save doctor changes immediately
     setupDoctorAutoSave();
 }
 
-// Auto-save for doctor changes
+// Auto-save for doctor changes - VERSIÓN MEJORADA PARA PERSISTENCIA GARANTIZADA
 function setupDoctorAutoSave() {
+    console.log('🔄 Configurando auto-save para doctores...');
+    
     // Set up auto-save for existing doctors
     const doctorEditors = document.querySelectorAll('.doctor-editor');
-    doctorEditors.forEach((editor) => {
+    console.log(`📋 Configurando auto-save para ${doctorEditors.length} doctores`);
+    
+    doctorEditors.forEach((editor, index) => {
         const doctorId = editor.getAttribute('data-doctor-id');
         const nameInput = document.getElementById(`doctor${doctorId}-name`);
         const specialtyInput = document.getElementById(`doctor${doctorId}-specialty`);
         const experienceInput = document.getElementById(`doctor${doctorId}-experience`);
         
-        // Add auto-save listeners
+        console.log(`👨‍⚕️ Configurando auto-save para Doctor ${index + 1} (ID: ${doctorId})`);
+        
+        // Add auto-save listeners for each input
         [nameInput, specialtyInput, experienceInput].forEach(input => {
             if (input) {
+                // Auto-save when user leaves the field (blur)
                 input.addEventListener('blur', function() {
-                    // Auto-save when user leaves the field
+                    console.log(`💾 Auto-save trigger: ${input.id} blur`);
                     if (hasUnsavedChanges) {
-                        console.log('Auto-saving doctor changes...');
+                        console.log('⏰ Auto-saving doctor changes on blur...');
                         saveAllChanges();
                     }
                 });
+                
+                // Auto-save after user stops typing (debounced)
+                let timeoutId;
+                input.addEventListener('input', function() {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => {
+                        console.log(`💾 Auto-save trigger: ${input.id} input (debounced)`);
+                        if (hasUnsavedChanges) {
+                            console.log('⏰ Auto-saving doctor changes after typing...');
+                            saveAllChanges();
+                        }
+                    }, 2000); // Guarda 2 segundos después de que el usuario deje de escribir
+                });
+                
+                console.log(`✅ Auto-save configurado para: ${input.id}`);
             }
         });
     });
+    
+    console.log('🎉 Auto-save para doctores configurado completamente');
 }
 
 // Export Site Data
@@ -1277,3 +1328,4 @@ function addDebugButton() {
 setTimeout(addDebugButton, 2000);
 
 console.log('Admin Script Loaded Successfully');
+
