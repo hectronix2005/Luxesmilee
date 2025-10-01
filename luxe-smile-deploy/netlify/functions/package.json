@@ -1,9 +1,7 @@
 {
   "name": "luxe-smile-netlify-functions",
   "version": "1.0.0",
-  "description": "Netlify Functions for Luxe Smile site data persistence",
+  "description": "Netlify Functions for Luxe Smile site data persistence using file storage",
   "main": "site-data.js",
-  "dependencies": {
-    "@netlify/blobs": "^7.0.0"
-  }
+  "dependencies": {}
 }

@@ -193,76 +193,50 @@ function showSection(sectionName) {
     }
 }
 
-// Load Site Data - VERSIÓN HÍBRIDA: Netlify como primaria, localStorage como backup confiable
+// Load Site Data - VERSIÓN NETLIFY PURA: Solo usa Netlify Function
 async function loadSiteData() {
-    console.log('📂 === INICIANDO CARGA DE DATOS ===');
+    console.log('📂 === INICIANDO CARGA DE DATOS DESDE NETLIFY ===');
     
     try {
-        // PASO 1: Intentar cargar desde Netlify Function (fuente primaria)
-        try {
-            console.log('🌐 PASO 1: Intentando cargar desde Netlify Function...');
+        console.log('🌐 Cargando datos desde Netlify Function...');
+        
+        const response = await fetch('/.netlify/functions/site-data', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            cache: 'no-cache'
+        });
+        
+        if (response.ok) {
+            const netlifyData = await response.json();
             
-            const response = await fetch('/.netlify/functions/site-data', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                cache: 'no-cache'
-            });
-            
-            if (response.ok) {
-                const netlifyData = await response.json();
+            if (netlifyData && netlifyData.doctors && netlifyData.doctors.length > 0) {
+                siteData = netlifyData;
+                console.log('✅ Datos cargados desde Netlify Function');
+                console.log('  - Número de doctores:', siteData.doctors.length);
                 
-                if (netlifyData && netlifyData.doctors && netlifyData.doctors.length > 0) {
-                    siteData = netlifyData;
-                    console.log('✅ Datos cargados desde Netlify Function');
-                    console.log('  - Número de doctores:', siteData.doctors.length);
-                    
-                    siteData.doctors.forEach((doctor, index) => {
-                        console.log(`  - Doctor ${index + 1}: "${doctor.name}"`);
-                    });
-                    
-                    // Guardar en localStorage como backup
-                    localStorage.setItem('siteData', JSON.stringify(siteData));
-                    console.log('💾 Backup guardado en localStorage');
-                    
-                    populateForms();
-                    return;
-                } else {
-                    console.log('⚠️ Netlify Function retornó datos vacíos o incompletos');
-                }
-            } else {
-                console.log('⚠️ Netlify Function error:', response.status);
-            }
-        } catch (netlifyError) {
-            console.log('⚠️ Netlify Function no disponible:', netlifyError.message);
-        }
-        
-        // PASO 2: Si Netlify falló, usar localStorage como fuente confiable
-        console.log('🔄 PASO 2: Cargando desde localStorage (backup)...');
-        const savedData = localStorage.getItem('siteData');
-        
-        if (savedData) {
-            siteData = JSON.parse(savedData);
-            console.log('✅ Datos cargados desde localStorage');
-            console.log('  - Número de doctores:', siteData.doctors ? siteData.doctors.length : 0);
-            
-            if (siteData.doctors && siteData.doctors.length > 0) {
                 siteData.doctors.forEach((doctor, index) => {
                     console.log(`  - Doctor ${index + 1}: "${doctor.name}"`);
                 });
+                
+                populateForms();
+                return;
+            } else {
+                console.log('⚠️ Netlify Function retornó datos vacíos o incompletos');
             }
-            
-            populateForms();
-            return;
+        } else {
+            console.error('❌ Netlify Function error:', response.status);
+            const errorText = await response.text();
+            console.error('   Error details:', errorText);
         }
         
     } catch (error) {
-        console.error('❌ Error crítico al cargar datos:', error);
+        console.error('❌ Error crítico al cargar datos desde Netlify:', error);
     }
     
-    // Si falló todo, cargar datos por defecto
-    console.log('⚠️ No se encontraron datos guardados, cargando defaults');
+    // Si Netlify falló, cargar datos por defecto
+    console.log('⚠️ Cargando datos por defecto debido a error en Netlify');
     loadDefaultData();
 }
 
@@ -517,9 +491,9 @@ function populateForms() {
     }
 }
 
-// Save All Changes - VERSIÓN HÍBRIDA: Guarda en localStorage SIEMPRE + intenta Netlify
+// Save All Changes - VERSIÓN NETLIFY PURA: Solo guarda en Netlify Function
 async function saveAllChanges() {
-    console.log('💾 === INICIANDO GUARDADO DE CAMBIOS ===');
+    console.log('💾 === INICIANDO GUARDADO EN NETLIFY ===');
     showLoading();
     
     try {
@@ -536,75 +510,72 @@ async function saveAllChanges() {
             });
         }
         
-        // PASO 3: Guardar INMEDIATAMENTE en localStorage (GARANTIZADO)
-        console.log('💾 PASO 3: Guardando en localStorage (garantizado)...');
-        localStorage.setItem('siteData', JSON.stringify(siteData));
-        sessionStorage.setItem('siteData', JSON.stringify(siteData));
+        // PASO 3: Guardar SOLO en Netlify Function
+        console.log('🌐 PASO 3: Guardando datos en Netlify Function...');
         
-        // Verificar guardado en localStorage
-        const savedData = localStorage.getItem('siteData');
-        if (savedData) {
-            const parsed = JSON.parse(savedData);
-            console.log('✅ Verificación localStorage:');
-            console.log('  - Doctores guardados:', parsed.doctors ? parsed.doctors.length : 0);
-            if (parsed.doctors && parsed.doctors.length > 0) {
-                parsed.doctors.forEach((doctor, index) => {
-                    console.log(`  - Doctor ${index + 1}: "${doctor.name}"`);
-                });
-            }
-        }
+        const response = await fetch('/.netlify/functions/site-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(siteData)
+        });
         
-        // PASO 4: Intentar guardar en Netlify Function (opcional, no bloquea si falla)
-        try {
-            console.log('🌐 PASO 4: Intentando sincronizar con Netlify Function...');
+        if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Datos guardados exitosamente en Netlify Function');
+            console.log('   Timestamp:', result.timestamp);
+            console.log('   Doctores guardados:', result.doctorsCount);
             
-            const response = await fetch('/.netlify/functions/site-data', {
-                method: 'POST',
+            // Verificar que se guardó correctamente volviendo a cargar
+            console.log('🔍 PASO 4: Verificando guardado...');
+            const verifyResponse = await fetch('/.netlify/functions/site-data', {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(siteData)
+                }
             });
             
-            if (response.ok) {
-                const result = await response.json();
-                console.log('✅ Datos sincronizados con Netlify Function');
-                console.log('   Timestamp:', result.timestamp);
-                
-                // Update main site
-                updateMainSite();
-                
-                hideLoading();
-                showSuccessMessage('✅ Cambios guardados y sincronizados con Netlify');
-                hasUnsavedChanges = false;
-                updateSaveButton();
-                
-                console.log('🎉 === GUARDADO COMPLETADO - localStorage + Netlify ===');
-                return;
-            } else {
-                console.log('⚠️ Netlify Function error:', response.status);
+            if (verifyResponse.ok) {
+                const verifiedData = await verifyResponse.json();
+                console.log('✅ Verificación exitosa:');
+                console.log('  - Doctores verificados:', verifiedData.doctors ? verifiedData.doctors.length : 0);
+                if (verifiedData.doctors && verifiedData.doctors.length > 0) {
+                    verifiedData.doctors.forEach((doctor, index) => {
+                        console.log(`  - Doctor ${index + 1}: "${doctor.name}"`);
+                    });
+                }
             }
-        } catch (netlifyError) {
-            console.log('⚠️ Netlify Function no disponible:', netlifyError.message);
+            
+            // Update main site
+            updateMainSite();
+            
+            hideLoading();
+            showSuccessMessage('✅ Cambios guardados permanentemente en Netlify');
+            hasUnsavedChanges = false;
+            updateSaveButton();
+            
+            console.log('🎉 === GUARDADO COMPLETADO EN NETLIFY ===');
+            return;
+            
+        } else {
+            const errorText = await response.text();
+            console.error('❌ Error al guardar en Netlify Function:', response.status, errorText);
+            
+            hideLoading();
+            showSuccessMessage('❌ Error al guardar cambios en Netlify');
+            
+            throw new Error(`Netlify Function error: ${response.status} - ${errorText}`);
         }
-        
-        // Si Netlify falló, aún así el guardado en localStorage fue exitoso
-        updateMainSite();
-        
-        hideLoading();
-        showSuccessMessage('✅ Cambios guardados en localStorage');
-        hasUnsavedChanges = false;
-        updateSaveButton();
-        
-        console.log('🎉 === GUARDADO COMPLETADO - localStorage ===');
         
     } catch (error) {
         console.error('❌ ERROR CRÍTICO durante el guardado:', error);
         
         hideLoading();
-        showSuccessMessage('❌ Error crítico al guardar cambios');
+        showSuccessMessage('❌ Error crítico al guardar cambios en Netlify');
         
         console.error('   Error details:', error.message);
+        console.error('   Stack trace:', error.stack);
     }
 }
 
@@ -742,8 +713,7 @@ function previewImage(input, previewId) {
 
 // Store Image Data
 function storeImageData(inputId, imageData) {
-    // Store image in localStorage (in real app, this would be uploaded to server)
-    localStorage.setItem(`image_${inputId}`, imageData);
+    // Store image data in siteData object (will be saved to Netlify with the rest of the data)
     
     // Update site data
     if (inputId.includes('doctor') && inputId.includes('image')) {
@@ -847,16 +817,11 @@ async function addNewDoctor() {
         }
     });
     
-    // Immediately save changes to persist the new doctor
-    console.log('💾 Guardando nuevo doctor...');
+    // Immediately save changes to persist the new doctor in Netlify
+    console.log('💾 Guardando nuevo doctor en Netlify...');
     collectFormData();
     
-    // Guardar en localStorage (garantizado)
-    localStorage.setItem('siteData', JSON.stringify(siteData));
-    sessionStorage.setItem('siteData', JSON.stringify(siteData));
-    console.log('✅ Nuevo doctor guardado en localStorage');
-    
-    // Intentar sincronizar con Netlify Function (opcional)
+    // Guardar SOLO en Netlify Function
     try {
         const response = await fetch('/.netlify/functions/site-data', {
             method: 'POST',
@@ -867,19 +832,26 @@ async function addNewDoctor() {
         });
         
         if (response.ok) {
-            console.log('✅ Nuevo doctor sincronizado con Netlify');
+            const result = await response.json();
+            console.log('✅ Nuevo doctor guardado en Netlify Function');
+            console.log('   Timestamp:', result.timestamp);
+            
+            // Update main site
+            updateMainSite();
+            
+            hasUnsavedChanges = false;
+            updateSaveButton();
+            
+            showSuccessMessage('✅ Nuevo doctor agregado y guardado en Netlify');
         } else {
-            console.log('⚠️ Netlify sync failed:', response.status);
+            const errorText = await response.text();
+            console.error('❌ Error al guardar nuevo doctor:', response.status, errorText);
+            showSuccessMessage('❌ Error al guardar nuevo doctor en Netlify');
         }
     } catch (apiError) {
-        console.log('⚠️ Netlify no disponible:', apiError.message);
+        console.error('❌ Error crítico al guardar nuevo doctor:', apiError);
+        showSuccessMessage('❌ Error crítico al agregar doctor');
     }
-    
-    // Update main site
-    updateMainSite();
-    
-    hasUnsavedChanges = false;
-    updateSaveButton();
     
     // Scroll to the new doctor
     const newDoctorElement = doctorsEditor.querySelector(`[data-doctor-id="${doctorCounter}"]`);
@@ -965,21 +937,10 @@ async function removeDoctor(doctorId) {
                 console.log(`   ${index + 1}. ${doctor.name}`);
             });
             
-            // PASO 5: Guardar INMEDIATAMENTE en localStorage (GARANTIZADO)
-            console.log('💾 PASO 5: Guardando eliminación en localStorage...');
-            localStorage.setItem('siteData', JSON.stringify(siteData));
-            sessionStorage.setItem('siteData', JSON.stringify(siteData));
+            // PASO 5: Guardar eliminación SOLO en Netlify Function
+            console.log('🌐 PASO 5: Guardando eliminación en Netlify Function...');
             
-            // Verificar guardado
-            const savedData = localStorage.getItem('siteData');
-            if (savedData) {
-                const parsed = JSON.parse(savedData);
-                console.log(`✅ Verificación: ${parsed.doctors ? parsed.doctors.length : 0} doctores guardados en localStorage`);
-            }
-            
-            // PASO 6: Intentar sincronizar con Netlify Function (opcional)
             try {
-                console.log('🌐 PASO 6: Sincronizando eliminación con Netlify...');
                 const response = await fetch('/.netlify/functions/site-data', {
                     method: 'POST',
                     headers: {
@@ -989,21 +950,27 @@ async function removeDoctor(doctorId) {
                 });
                 
                 if (response.ok) {
-                    console.log('✅ Eliminación sincronizada con Netlify');
+                    const result = await response.json();
+                    console.log('✅ Eliminación guardada exitosamente en Netlify Function');
+                    console.log('   Timestamp:', result.timestamp);
+                    console.log('   Doctores restantes:', result.doctorsCount);
+                    
+                    // Actualizar estado de la aplicación
+                    updateMainSite();
+                    hasUnsavedChanges = false;
+                    updateSaveButton();
+                    showSuccessMessage(`✅ Doctor "${doctorName}" eliminado y guardado en Netlify`);
+                    
+                    console.log('🎉 Doctor eliminado exitosamente y persistido en Netlify');
                 } else {
-                    console.log('⚠️ Netlify sync failed:', response.status);
+                    const errorText = await response.text();
+                    console.error('❌ Error al guardar eliminación:', response.status, errorText);
+                    showSuccessMessage(`❌ Error al guardar eliminación del doctor "${doctorName}"`);
                 }
             } catch (apiError) {
-                console.log('⚠️ Netlify no disponible:', apiError.message);
+                console.error('❌ Error crítico al guardar eliminación:', apiError);
+                showSuccessMessage(`❌ Error crítico al eliminar doctor "${doctorName}"`);
             }
-            
-            // Actualizar estado de la aplicación
-            updateMainSite();
-            hasUnsavedChanges = false;
-            updateSaveButton();
-            showSuccessMessage(`✅ Doctor "${doctorName}" eliminado y guardado`);
-            
-            console.log('🎉 Doctor eliminado exitosamente y persistido');
             
             console.log('🎉 Doctor eliminado exitosamente y datos persistidos');
             

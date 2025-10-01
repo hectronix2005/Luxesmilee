@@ -1,12 +1,11 @@
 // Netlify Function para gestionar datos del sitio
-// Almacena los datos usando variables de entorno de Netlify como almacenamiento simple
+// Almacena los datos usando un archivo JSON persistente en el sistema de archivos de Netlify
 
-// NOTA: Esta es una solución temporal. Para producción se recomienda usar una base de datos real
-// como Supabase, Firebase, o Netlify Blobs con configuración adecuada.
+const fs = require('fs').promises;
+const path = require('path');
 
-// Los datos se almacenarán en memoria durante la ejecución de la función
-// Para persistencia real, necesitarías una base de datos externa
-let siteDataCache = null;
+// Ruta donde se almacenarán los datos (en el directorio de la función)
+const DATA_FILE = path.join(__dirname, 'site-data.json');
 
 // Datos por defecto si no existe el archivo
 const DEFAULT_DATA = {
@@ -70,49 +69,35 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        // Obtener el store de Netlify Blobs
-        const store = getStore('site-data-store');
-
         // GET: Obtener datos
         if (event.httpMethod === 'GET') {
-            console.log('📂 GET request - Loading site data from Netlify Blobs');
+            console.log('📂 GET request - Loading site data from file');
             
             try {
-                // Intentar leer los datos del blob
-                const dataString = await store.get(DATA_KEY);
+                // Intentar leer el archivo de datos
+                const data = await fs.readFile(DATA_FILE, 'utf8');
+                const siteData = JSON.parse(data);
                 
-                if (dataString) {
-                    const siteData = JSON.parse(dataString);
-                    
-                    console.log('✅ Data loaded successfully from Netlify Blobs');
-                    console.log('  - Doctors count:', siteData.doctors ? siteData.doctors.length : 0);
-                    if (siteData.doctors && siteData.doctors.length > 0) {
-                        siteData.doctors.forEach((doctor, index) => {
-                            console.log(`  - Doctor ${index + 1}: "${doctor.name}"`);
-                        });
-                    }
-                    
-                    return {
-                        statusCode: 200,
-                        headers,
-                        body: JSON.stringify(siteData)
-                    };
-                } else {
-                    // Si no existe, retornar y guardar datos por defecto
-                    console.log('⚠️ No data found in Netlify Blobs, saving defaults');
-                    
-                    await store.set(DATA_KEY, JSON.stringify(DEFAULT_DATA));
-                    
-                    return {
-                        statusCode: 200,
-                        headers,
-                        body: JSON.stringify(DEFAULT_DATA)
-                    };
+                console.log('✅ Data loaded successfully from file');
+                console.log('  - Doctors count:', siteData.doctors ? siteData.doctors.length : 0);
+                if (siteData.doctors && siteData.doctors.length > 0) {
+                    siteData.doctors.forEach((doctor, index) => {
+                        console.log(`  - Doctor ${index + 1}: "${doctor.name}"`);
+                    });
                 }
-            } catch (error) {
-                console.error('❌ Error reading from Netlify Blobs:', error);
                 
-                // Retornar datos por defecto en caso de error
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify(siteData)
+                };
+            } catch (error) {
+                // Si no existe el archivo, retornar datos por defecto
+                console.log('⚠️ Data file not found, returning defaults');
+                
+                // Guardar los datos por defecto para futuras peticiones
+                await fs.writeFile(DATA_FILE, JSON.stringify(DEFAULT_DATA, null, 2), 'utf8');
+                
                 return {
                     statusCode: 200,
                     headers,
@@ -123,7 +108,7 @@ exports.handler = async (event, context) => {
 
         // POST: Guardar datos
         if (event.httpMethod === 'POST') {
-            console.log('💾 POST request - Saving site data to Netlify Blobs');
+            console.log('💾 POST request - Saving site data to file');
             
             if (!event.body) {
                 return {
@@ -147,17 +132,17 @@ exports.handler = async (event, context) => {
                 });
             }
 
-            // Guardar los datos en Netlify Blobs
-            await store.set(DATA_KEY, JSON.stringify(newData));
+            // Guardar los datos en el archivo
+            await fs.writeFile(DATA_FILE, JSON.stringify(newData, null, 2), 'utf8');
             
-            console.log('✅ Data saved successfully to Netlify Blobs');
+            console.log('✅ Data saved successfully to file');
 
             return {
                 statusCode: 200,
                 headers,
                 body: JSON.stringify({ 
                     success: true, 
-                    message: 'Data saved successfully to Netlify Blobs',
+                    message: 'Data saved successfully to file',
                     timestamp: new Date().toISOString(),
                     doctorsCount: newData.doctors ? newData.doctors.length : 0
                 })
