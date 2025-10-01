@@ -47,7 +47,20 @@ const DEFAULT_DATA = {
         primaryColor: "#4A90E2",
         secondaryColor: "#357ABD",
         tabTitle: "Odontología Peña - Herrera"
-    }
+    },
+    users: [
+        {
+            id: 1,
+            username: "admin",
+            email: "admin@luxesmilee.com",
+            role: "administrator",
+            name: "Administrador",
+            phone: "",
+            status: "active",
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+        }
+    ]
 };
 
 exports.handler = async (event, context) => {

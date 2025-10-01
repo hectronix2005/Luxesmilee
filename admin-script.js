@@ -154,6 +154,11 @@ function setupEventListeners() {
             const section = this.getAttribute('data-section');
             showSection(section);
             
+            // Load users if users section is selected
+            if (section === 'users') {
+                loadUsers();
+            }
+            
             // Update active nav item
             navItems.forEach(nav => nav.classList.remove('active'));
             this.classList.add('active');
@@ -610,7 +615,7 @@ function collectFormData() {
         if (nameElement && specialtyElement && experienceElement) {
             // Preserve existing image data
             const existingDoctor = siteData.doctors && siteData.doctors[index] ? siteData.doctors[index] : null;
-            const imageData = existingDoctor?.image || localStorage.getItem(`image_doctor${doctorId}-image`) || '';
+            const imageData = existingDoctor?.image || '';
             
             const doctorData = {
                 name: nameElement.value,
@@ -691,7 +696,7 @@ function collectFormData() {
 // Update Main Site
 function updateMainSite() {
     // This would typically send data to a server
-    // For now, we'll store it in localStorage and the main site can read it
+    // Data is now stored in Netlify Function
     console.log('Site data updated:', siteData);
 }
 
@@ -1226,10 +1231,343 @@ window.addEventListener('beforeunload', function(e) {
 function debugDataStatus() {
     console.log('=== DEBUG: Data Status ===');
     console.log('Current siteData:', siteData);
-    console.log('localStorage siteData:', localStorage.getItem('siteData'));
-    console.log('sessionStorage siteData:', sessionStorage.getItem('siteData'));
+    console.log('Netlify Function available: true');
     console.log('Firebase available:', !!window.firebaseDB);
     console.log('========================');
+}
+
+// ===== USER MANAGEMENT FUNCTIONS =====
+
+// Load users from Netlify Function
+async function loadUsers() {
+    try {
+        console.log('📂 Loading users from Netlify Function...');
+        
+        const response = await fetch('/.netlify/functions/users', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('✅ Users loaded successfully:', result.users.length);
+            renderUsers(result.users);
+            return result.users;
+        } else {
+            throw new Error(result.error || 'Failed to load users');
+        }
+    } catch (error) {
+        console.error('❌ Error loading users:', error);
+        showNotification('Error al cargar usuarios: ' + error.message, 'error');
+        return [];
+    }
+}
+
+// Render users in the UI
+function renderUsers(users) {
+    const usersList = document.getElementById('users-list');
+    if (!usersList) return;
+
+    if (users.length === 0) {
+        usersList.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: #666;">
+                <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                <p>No hay usuarios registrados</p>
+            </div>
+        `;
+        return;
+    }
+
+    usersList.innerHTML = users.map(user => `
+        <div class="user-card">
+            <div class="user-header">
+                <div class="user-avatar">
+                    ${user.name.charAt(0).toUpperCase()}
+                </div>
+                <div class="user-info">
+                    <h3>${user.name}</h3>
+                    <p>@${user.username}</p>
+                </div>
+            </div>
+            
+            <div class="user-role ${user.role}">${user.role}</div>
+            <div class="user-status ${user.status}">${user.status === 'active' ? 'Activo' : 'Inactivo'}</div>
+            
+            <div class="user-details">
+                <p><i class="fas fa-envelope"></i> ${user.email}</p>
+                ${user.phone ? `<p><i class="fas fa-phone"></i> ${user.phone}</p>` : ''}
+                <p><i class="fas fa-calendar"></i> Creado: ${new Date(user.createdAt).toLocaleDateString()}</p>
+                ${user.lastLogin ? `<p><i class="fas fa-clock"></i> Último acceso: ${new Date(user.lastLogin).toLocaleDateString()}</p>` : '<p><i class="fas fa-clock"></i> Nunca ha iniciado sesión</p>'}
+            </div>
+            
+            <div class="user-actions">
+                <button class="btn-edit" onclick="editUser(${user.id})">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                ${user.username !== 'admin' || user.role !== 'administrator' ? `
+                <button class="btn-delete" onclick="deleteUser(${user.id}, '${user.username}')">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+                ` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Show add user modal
+function showAddUserModal() {
+    const modal = document.getElementById('add-user-modal');
+    if (modal) {
+        modal.classList.add('show');
+        // Clear form
+        document.getElementById('add-user-form').reset();
+    }
+}
+
+// Close add user modal
+function closeAddUserModal() {
+    const modal = document.getElementById('add-user-modal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+// Create new user
+async function createUser() {
+    const form = document.getElementById('add-user-form');
+    const formData = new FormData(form);
+    
+    const userData = {
+        username: document.getElementById('new-user-username').value.trim(),
+        email: document.getElementById('new-user-email').value.trim(),
+        name: document.getElementById('new-user-name').value.trim(),
+        phone: document.getElementById('new-user-phone').value.trim(),
+        role: document.getElementById('new-user-role').value,
+        status: document.getElementById('new-user-status').value
+    };
+
+    // Validate required fields
+    if (!userData.username || !userData.email || !userData.name) {
+        showNotification('Por favor completa todos los campos obligatorios', 'error');
+        return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email)) {
+        showNotification('Por favor ingresa un email válido', 'error');
+        return;
+    }
+
+    try {
+        console.log('➕ Creating new user:', userData.username);
+        
+        const response = await fetch('/.netlify/functions/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            console.log('✅ User created successfully:', result.user.username);
+            showNotification('Usuario creado exitosamente', 'success');
+            closeAddUserModal();
+            loadUsers(); // Reload users list
+        } else {
+            throw new Error(result.error || 'Failed to create user');
+        }
+    } catch (error) {
+        console.error('❌ Error creating user:', error);
+        showNotification('Error al crear usuario: ' + error.message, 'error');
+    }
+}
+
+// Show edit user modal
+function editUser(userId) {
+    // First load current users to get the user data
+    loadUsers().then(users => {
+        const user = users.find(u => u.id === userId);
+        if (!user) {
+            showNotification('Usuario no encontrado', 'error');
+            return;
+        }
+
+        // Populate edit form
+        document.getElementById('edit-user-id').value = user.id;
+        document.getElementById('edit-user-username').value = user.username;
+        document.getElementById('edit-user-email').value = user.email;
+        document.getElementById('edit-user-name').value = user.name;
+        document.getElementById('edit-user-phone').value = user.phone || '';
+        document.getElementById('edit-user-role').value = user.role;
+        document.getElementById('edit-user-status').value = user.status;
+
+        // Show modal
+        const modal = document.getElementById('edit-user-modal');
+        if (modal) {
+            modal.classList.add('show');
+        }
+    });
+}
+
+// Close edit user modal
+function closeEditUserModal() {
+    const modal = document.getElementById('edit-user-modal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+// Update user
+async function updateUser() {
+    const userId = document.getElementById('edit-user-id').value;
+    
+    const userData = {
+        username: document.getElementById('edit-user-username').value.trim(),
+        email: document.getElementById('edit-user-email').value.trim(),
+        name: document.getElementById('edit-user-name').value.trim(),
+        phone: document.getElementById('edit-user-phone').value.trim(),
+        role: document.getElementById('edit-user-role').value,
+        status: document.getElementById('edit-user-status').value
+    };
+
+    // Validate required fields
+    if (!userData.username || !userData.email || !userData.name) {
+        showNotification('Por favor completa todos los campos obligatorios', 'error');
+        return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email)) {
+        showNotification('Por favor ingresa un email válido', 'error');
+        return;
+    }
+
+    try {
+        console.log('✏️ Updating user:', userId);
+        
+        const response = await fetch(`/.netlify/functions/users?id=${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            console.log('✅ User updated successfully:', result.user.username);
+            showNotification('Usuario actualizado exitosamente', 'success');
+            closeEditUserModal();
+            loadUsers(); // Reload users list
+        } else {
+            throw new Error(result.error || 'Failed to update user');
+        }
+    } catch (error) {
+        console.error('❌ Error updating user:', error);
+        showNotification('Error al actualizar usuario: ' + error.message, 'error');
+    }
+}
+
+// Delete user
+async function deleteUser(userId, username) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar al usuario "${username}"?\n\nEsta acción no se puede deshacer.`)) {
+        return;
+    }
+
+    try {
+        console.log('🗑️ Deleting user:', userId);
+        
+        const response = await fetch(`/.netlify/functions/users?id=${userId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            console.log('✅ User deleted successfully:', result.deletedUser.username);
+            showNotification('Usuario eliminado exitosamente', 'success');
+            loadUsers(); // Reload users list
+        } else {
+            throw new Error(result.error || 'Failed to delete user');
+        }
+    } catch (error) {
+        console.error('❌ Error deleting user:', error);
+        showNotification('Error al eliminar usuario: ' + error.message, 'error');
+    }
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Add styles if not already added
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: white;
+                border-radius: 8px;
+                padding: 1rem 1.5rem;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                z-index: 10001;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            }
+            .notification.show {
+                transform: translateX(0);
+            }
+            .notification-success {
+                border-left: 4px solid #28a745;
+                color: #155724;
+            }
+            .notification-error {
+                border-left: 4px solid #dc3545;
+                color: #721c24;
+            }
+            .notification-info {
+                border-left: 4px solid #17a2b8;
+                color: #0c5460;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Show notification
+    setTimeout(() => notification.classList.add('show'), 100);
+    
+    // Hide notification after 5 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => document.body.removeChild(notification), 300);
+    }, 5000);
 }
 
 // Add debug button to admin panel

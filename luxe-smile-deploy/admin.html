@@ -58,6 +58,10 @@
                     <i class="fas fa-address-book"></i>
                     <span>Contacto</span>
                 </li>
+                <li class="nav-item" data-section="users">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </li>
                 <li class="nav-item" data-section="settings">
                     <i class="fas fa-cog"></i>
                     <span>Configuración</span>
@@ -638,6 +642,23 @@ Permite corregir la forma de tus dientes</textarea>
             </div>
         </section>
 
+        <!-- Users Section -->
+        <section class="admin-section" id="users-section">
+            <div class="section-header">
+                <h2><i class="fas fa-users"></i> Administración de Usuarios</h2>
+                <p>Gestiona los usuarios del sistema</p>
+                <button class="btn btn-primary" onclick="showAddUserModal()">
+                    <i class="fas fa-plus"></i> Agregar Usuario
+                </button>
+            </div>
+            
+            <div class="users-container">
+                <div class="users-list" id="users-list">
+                    <!-- Los usuarios se cargarán dinámicamente aquí -->
+                </div>
+            </div>
+        </section>
+
         <!-- Settings Section -->
         <section class="admin-section" id="settings-section">
             <div class="section-header">
@@ -683,13 +704,113 @@ Permite corregir la forma de tus dientes</textarea>
             <i class="fas fa-spinner fa-spin"></i>
             <span>Guardando cambios...</span>
         </div>
-            <i class="fas fa-spinner fa-spin"></i>
-            <span>Guardando cambios...</span>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal" id="add-user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Agregar Nuevo Usuario</h3>
+                <button class="modal-close" onclick="closeAddUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-user-form">
+                    <div class="form-group">
+                        <label for="new-user-username">Nombre de Usuario *</label>
+                        <input type="text" id="new-user-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-user-email">Email *</label>
+                        <input type="email" id="new-user-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-user-name">Nombre Completo *</label>
+                        <input type="text" id="new-user-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-user-phone">Teléfono</label>
+                        <input type="tel" id="new-user-phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-user-role">Rol</label>
+                        <select id="new-user-role">
+                            <option value="user">Usuario</option>
+                            <option value="editor">Editor</option>
+                            <option value="administrator">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-user-status">Estado</label>
+                        <select id="new-user-status">
+                            <option value="active">Activo</option>
+                            <option value="inactive">Inactivo</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddUserModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="createUser()">
+                    <i class="fas fa-plus"></i> Crear Usuario
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- Firebase Configuration (Opcional - Comentado para evitar error 404) -->
-    <!-- <script type="module" src="firebase-config.js"></script> -->
+    <!-- Edit User Modal -->
+    <div class="modal" id="edit-user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-edit"></i> Editar Usuario</h3>
+                <button class="modal-close" onclick="closeEditUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-user-form">
+                    <input type="hidden" id="edit-user-id">
+                    <div class="form-group">
+                        <label for="edit-user-username">Nombre de Usuario *</label>
+                        <input type="text" id="edit-user-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-user-email">Email *</label>
+                        <input type="email" id="edit-user-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-user-name">Nombre Completo *</label>
+                        <input type="text" id="edit-user-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-user-phone">Teléfono</label>
+                        <input type="tel" id="edit-user-phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-user-role">Rol</label>
+                        <select id="edit-user-role">
+                            <option value="user">Usuario</option>
+                            <option value="editor">Editor</option>
+                            <option value="administrator">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-user-status">Estado</label>
+                        <select id="edit-user-status">
+                            <option value="active">Activo</option>
+                            <option value="inactive">Inactivo</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditUserModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="updateUser()">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Configuration -->
+    <script type="module" src="firebase-config.js"></script>
     <script src="admin-script.js"></script>
 </body>
 </html>
